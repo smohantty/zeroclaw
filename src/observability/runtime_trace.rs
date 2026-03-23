@@ -192,6 +192,19 @@ pub fn init_from_config(config: &ObservabilityConfig, workspace_dir: &Path) {
     *guard = logger;
 }
 
+fn sanitize_trace_value(value: Value) -> Value {
+    match value {
+        Value::String(text) => Value::String(crate::util::redact_inline_image_data(&text)),
+        Value::Array(items) => Value::Array(items.into_iter().map(sanitize_trace_value).collect()),
+        Value::Object(map) => Value::Object(
+            map.into_iter()
+                .map(|(key, value)| (key, sanitize_trace_value(value)))
+                .collect(),
+        ),
+        other => other,
+    }
+}
+
 /// Record a runtime trace event.
 pub fn record_event(
     event_type: &str,
@@ -220,8 +233,8 @@ pub fn record_event(
         model: model.map(str::to_string),
         turn_id: turn_id.map(str::to_string),
         success,
-        message: message.map(str::to_string),
-        payload,
+        message: message.map(crate::util::redact_inline_image_data),
+        payload: sanitize_trace_value(payload),
     };
 
     if let Err(err) = logger.append(&event) {
