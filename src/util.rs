@@ -2,6 +2,9 @@
 //!
 //! This module contains reusable helper functions used across the codebase.
 
+use regex::Regex;
+use std::sync::LazyLock;
+
 /// Allowed serial device path prefixes — reject arbitrary paths for security.
 /// Used by hardware serial transport and peripherals.
 const SERIAL_ALLOWED_PATH_PREFIXES: &[&str] = &[
@@ -21,6 +24,13 @@ pub fn is_serial_path_allowed(path: &str) -> bool {
         .iter()
         .any(|prefix| path.starts_with(prefix))
 }
+
+static IMAGE_MARKER_DATA_URI_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\[IMAGE:data:(image/[a-zA-Z0-9.+-]+);base64,([A-Za-z0-9+/=]+)\]").unwrap()
+});
+
+static IMAGE_DATA_URI_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"data:(image/[a-zA-Z0-9.+-]+);base64,([A-Za-z0-9+/=]+)").unwrap());
 
 /// Truncate a string to at most `max_chars` characters, appending "..." if truncated.
 ///
@@ -61,6 +71,29 @@ pub fn truncate_with_ellipsis(s: &str, max_chars: usize) -> String {
         }
         None => s.to_string(),
     }
+}
+
+/// Redact inline image data URIs so they do not linger in logs or history.
+pub fn redact_inline_image_data(input: &str) -> String {
+    let without_markers = IMAGE_MARKER_DATA_URI_REGEX
+        .replace_all(input, |caps: &regex::Captures| {
+            format!(
+                "[image attachment omitted: {}, base64 {} chars]",
+                &caps[1],
+                caps[2].len()
+            )
+        })
+        .to_string();
+
+    IMAGE_DATA_URI_REGEX
+        .replace_all(&without_markers, |caps: &regex::Captures| {
+            format!(
+                "[image data omitted: {}, base64 {} chars]",
+                &caps[1],
+                caps[2].len()
+            )
+        })
+        .to_string()
 }
 
 /// Utility enum for handling optional values.

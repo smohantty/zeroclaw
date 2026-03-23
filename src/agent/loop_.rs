@@ -16,10 +16,10 @@ use crate::util::truncate_with_ellipsis;
 use anyhow::Result;
 use futures_util::StreamExt;
 use regex::{Regex, RegexSet};
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 use std::fmt::Write;
 use std::io::Write as _;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, LazyLock, Mutex};
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
@@ -238,6 +238,117 @@ pub(crate) fn scrub_credentials(input: &str) -> String {
             }
         })
         .to_string()
+}
+
+const INTERNAL_IMAGE_ATTACHMENT_PROMPT: &str = "Internal attachment from the previous tool result. Use this image for the current step only, extract the relevant facts, and do not repeat or preserve raw image payloads.";
+
+#[derive(Debug, Clone)]
+struct PreparedToolOutput {
+    output: String,
+    error_reason: Option<String>,
+    ephemeral_messages: Vec<ChatMessage>,
+}
+
+fn is_local_image_path(candidate: &str) -> bool {
+    let trimmed = candidate.trim().trim_matches(|ch| ch == '"' || ch == '\'');
+    if !trimmed.starts_with('/') {
+        return false;
+    }
+
+    let Some(ext) = Path::new(trimmed).extension().and_then(|ext| ext.to_str()) else {
+        return false;
+    };
+
+    matches!(
+        ext.to_ascii_lowercase().as_str(),
+        "png" | "jpg" | "jpeg" | "gif" | "webp" | "bmp"
+    )
+}
+
+fn collect_tool_output_image_paths(tool_name: &str, output: &str) -> Vec<String> {
+    let mut paths = BTreeSet::new();
+    let mut add = |candidate: &str| {
+        let trimmed = candidate.trim().trim_matches(|ch| ch == '"' || ch == '\'');
+        if is_local_image_path(trimmed) {
+            paths.insert(trimmed.to_string());
+        }
+    };
+
+    match tool_name {
+        "screenshot" => {
+            for line in output.lines() {
+                if let Some(path) = line.trim().strip_prefix("Screenshot saved to:") {
+                    add(path);
+                } else {
+                    add(line);
+                }
+            }
+        }
+        "image_info" => {
+            for line in output.lines() {
+                if let Some(path) = line.trim().strip_prefix("File:") {
+                    add(path);
+                }
+            }
+        }
+        "shell" => {
+            for line in output.lines() {
+                add(line);
+            }
+        }
+        _ => {}
+    }
+
+    paths.into_iter().collect()
+}
+
+fn prepare_tool_output_for_history(
+    tool_name: &str,
+    output: &str,
+    error_reason: Option<&str>,
+    allow_ephemeral_images: bool,
+) -> PreparedToolOutput {
+    let scrubbed_output = scrub_credentials(output);
+    let mut persisted_output = crate::util::redact_inline_image_data(&scrubbed_output);
+    let had_inline_image_data = persisted_output != scrubbed_output;
+
+    let image_paths = if allow_ephemeral_images {
+        collect_tool_output_image_paths(tool_name, output)
+    } else {
+        Vec::new()
+    };
+
+    if had_inline_image_data {
+        let note = if image_paths.is_empty() {
+            "[inline image payload omitted from history]"
+        } else {
+            "[inline image payload omitted from history; image attached separately for the next vision step]"
+        };
+        if !persisted_output.ends_with('\n') && !persisted_output.is_empty() {
+            persisted_output.push('\n');
+        }
+        persisted_output.push_str(note);
+    }
+
+    let persisted_error_reason = error_reason.map(|reason| {
+        let scrubbed = scrub_credentials(reason);
+        crate::util::redact_inline_image_data(&scrubbed)
+    });
+
+    let ephemeral_messages = image_paths
+        .into_iter()
+        .map(|path| {
+            ChatMessage::user(format!(
+                "{INTERNAL_IMAGE_ATTACHMENT_PROMPT}\n\n[IMAGE:{path}]"
+            ))
+        })
+        .collect();
+
+    PreparedToolOutput {
+        output: persisted_output,
+        error_reason: persisted_error_reason,
+        ephemeral_messages,
+    }
 }
 
 /// Default trigger for auto-compaction when non-system message count exceeds this threshold.
@@ -2302,6 +2413,7 @@ pub(crate) async fn run_tool_call_loop(
         .collect();
     let mut consecutive_identical_outputs: usize = 0;
     let mut last_tool_output_hash: Option<u64> = None;
+    let mut ephemeral_next_messages: Vec<ChatMessage> = Vec::new();
 
     let mut loop_detector = crate::agent::loop_detector::LoopDetector::new(
         crate::agent::loop_detector::LoopDetectorConfig {
@@ -2405,12 +2517,15 @@ pub(crate) async fn run_tool_call_loop(
         }
         let use_native_tools = provider.supports_native_tools() && !tool_specs.is_empty();
 
-        let image_marker_count = multimodal::count_image_markers(history);
+        let ephemeral_request_count = ephemeral_next_messages.len();
+        let mut request_history = history.clone();
+        request_history.extend(std::mem::take(&mut ephemeral_next_messages));
 
+        let image_marker_count = multimodal::count_image_markers(&request_history);
         // ── Vision provider routing ──────────────────────────
         // When the default provider lacks vision support but a dedicated
         // vision_provider is configured, create it on demand and use it
-        // for this iteration.  Otherwise, preserve the original error.
+        // for this iteration. Otherwise, preserve the original error.
         let vision_provider_box: Option<Box<dyn Provider>> = if image_marker_count > 0
             && !provider.supports_vision()
         {
@@ -2430,13 +2545,13 @@ pub(crate) async fn run_tool_call_loop(
                 Some(vp_instance)
             } else {
                 return Err(ProviderCapabilityError {
-                        provider: provider_name.to_string(),
-                        capability: "vision".to_string(),
-                        message: format!(
-                            "received {image_marker_count} image marker(s), but this provider does not support vision input"
-                        ),
-                    }
-                    .into());
+                    provider: provider_name.to_string(),
+                    capability: "vision".to_string(),
+                    message: format!(
+                        "received {image_marker_count} image marker(s), but this provider does not support vision input"
+                    ),
+                }
+                .into());
             }
         } else {
             None
@@ -2455,7 +2570,7 @@ pub(crate) async fn run_tool_call_loop(
             };
 
         let prepared_messages =
-            multimodal::prepare_messages_for_provider(history, multimodal_config).await?;
+            multimodal::prepare_messages_for_provider(&request_history, multimodal_config).await?;
 
         // ── Progress: LLM thinking ────────────────────────────
         if let Some(ref tx) = on_delta {
@@ -2470,7 +2585,7 @@ pub(crate) async fn run_tool_call_loop(
         observer.record_event(&ObserverEvent::LlmRequest {
             provider: active_provider_name.to_string(),
             model: active_model.to_string(),
-            messages_count: history.len(),
+            messages_count: request_history.len(),
         });
         runtime_trace::record_event(
             "llm_request",
@@ -2482,7 +2597,9 @@ pub(crate) async fn run_tool_call_loop(
             None,
             serde_json::json!({
                 "iteration": iteration + 1,
-                "messages_count": history.len(),
+                "messages_count": request_history.len(),
+                "history_messages_count": history.len(),
+                "ephemeral_messages_count": ephemeral_request_count,
             }),
         );
 
@@ -2490,7 +2607,7 @@ pub(crate) async fn run_tool_call_loop(
 
         // Fire void hook before LLM call
         if let Some(hooks) = hooks {
-            hooks.fire_llm_input(history, model).await;
+            hooks.fire_llm_input(&request_history, model).await;
         }
 
         // Budget enforcement — block if limit exceeded (no-op when not scoped)
@@ -3166,40 +3283,56 @@ pub(crate) async fn run_tool_call_loop(
             .zip(executable_calls.iter())
             .zip(executed_outcomes.into_iter())
         {
+            let ToolExecutionOutcome {
+                output,
+                success,
+                error_reason,
+                duration,
+            } = outcome;
+            let prepared_output = prepare_tool_output_for_history(
+                &call.name,
+                &output,
+                error_reason.as_deref(),
+                provider.supports_vision() || multimodal_config.vision_provider.is_some(),
+            );
+            let persisted_output = prepared_output.output;
+            let persisted_error_reason = prepared_output.error_reason;
+            ephemeral_next_messages.extend(prepared_output.ephemeral_messages);
+
             runtime_trace::record_event(
                 "tool_call_result",
                 Some(channel_name),
                 Some(provider_name),
                 Some(model),
                 Some(&turn_id),
-                Some(outcome.success),
-                outcome.error_reason.as_deref(),
+                Some(success),
+                persisted_error_reason.as_deref(),
                 serde_json::json!({
                     "iteration": iteration + 1,
                     "tool": call.name.clone(),
-                    "duration_ms": outcome.duration.as_millis(),
-                    "output": scrub_credentials(&outcome.output),
+                    "duration_ms": duration.as_millis(),
+                    "output": persisted_output.clone(),
                 }),
             );
 
             // ── Hook: after_tool_call (void) ─────────────────
             if let Some(hooks) = hooks {
                 let tool_result_obj = crate::tools::ToolResult {
-                    success: outcome.success,
-                    output: outcome.output.clone(),
+                    success,
+                    output: persisted_output.clone(),
                     error: None,
                 };
                 hooks
-                    .fire_after_tool_call(&call.name, &tool_result_obj, outcome.duration)
+                    .fire_after_tool_call(&call.name, &tool_result_obj, duration)
                     .await;
             }
 
             // ── Progress: tool completion ───────────────────────
             if let Some(ref tx) = on_delta {
-                let secs = outcome.duration.as_secs();
-                let progress_msg = if outcome.success {
+                let secs = duration.as_secs();
+                let progress_msg = if success {
                     format!("\u{2705} {} ({secs}s)\n", call.name)
-                } else if let Some(ref reason) = outcome.error_reason {
+                } else if let Some(ref reason) = persisted_error_reason {
                     format!(
                         "\u{274c} {} ({secs}s): {}\n",
                         call.name,
@@ -3212,7 +3345,16 @@ pub(crate) async fn run_tool_call_loop(
                 let _ = tx.send(DraftEvent::Progress(progress_msg)).await;
             }
 
-            ordered_results[*idx] = Some((call.name.clone(), call.tool_call_id.clone(), outcome));
+            ordered_results[*idx] = Some((
+                call.name.clone(),
+                call.tool_call_id.clone(),
+                ToolExecutionOutcome {
+                    output: persisted_output,
+                    success,
+                    error_reason: persisted_error_reason,
+                    duration,
+                },
+            ));
         }
 
         // Collect tool results and build per-tool output for loop detection.
