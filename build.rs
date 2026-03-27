@@ -18,7 +18,6 @@ fn main() {
     println!("cargo:rerun-if-changed=web/tsconfig.app.json");
     println!("cargo:rerun-if-changed=web/tsconfig.node.json");
     println!("cargo:rerun-if-changed=web/vite.config.ts");
-    println!("cargo:rerun-if-changed=web/dist");
 
     // Attempt to build the web frontend if npm is available and web/dist is
     // missing or stale.  The build is best-effort: when Node.js is not
@@ -151,8 +150,19 @@ fn ensure_dashboard_assets(dist_dir: &Path) {
     }
 
     let dst = dist_dir.join("zeroclaw-trans.png");
+    if files_equal(src, &dst) {
+        return;
+    }
+
     if let Err(e) = fs::copy(src, &dst) {
         eprintln!("cargo:warning=Failed to copy zeroclaw-trans.png into web/dist/: {e}");
+    }
+}
+
+fn files_equal(left: &Path, right: &Path) -> bool {
+    match (fs::read(left), fs::read(right)) {
+        (Ok(left_bytes), Ok(right_bytes)) => left_bytes == right_bytes,
+        _ => false,
     }
 }
 
