@@ -26,7 +26,7 @@ impl TokenUsage {
         }
     }
 
-    /// Create a new token usage record.
+    /// Create a new token usage record (no cache-aware pricing).
     pub fn new(
         model: impl Into<String>,
         input_tokens: u64,
@@ -34,19 +34,77 @@ impl TokenUsage {
         input_price_per_million: f64,
         output_price_per_million: f64,
     ) -> Self {
-        let model = model.into();
-        let input_price_per_million = Self::sanitize_price(input_price_per_million);
-        let output_price_per_million = Self::sanitize_price(output_price_per_million);
-        let total_tokens = input_tokens.saturating_add(output_tokens);
+        Self::with_cache(
+            model,
+            input_tokens,
+            output_tokens,
+            0,
+            0,
+            input_price_per_million,
+            output_price_per_million,
+            0.0,
+            0.0,
+        )
+    }
 
-        // Calculate cost: (tokens / 1M) * price_per_million
-        let input_cost = (input_tokens as f64 / 1_000_000.0) * input_price_per_million;
-        let output_cost = (output_tokens as f64 / 1_000_000.0) * output_price_per_million;
-        let cost_usd = input_cost + output_cost;
+    /// Create a token usage record with cache-aware pricing.
+    ///
+    /// Anthropic reports token counts as:
+    /// - `input_tokens`: fresh (non-cached) input tokens
+    /// - `cache_read_tokens`: tokens served from prompt cache
+    /// - `cache_write_tokens`: tokens written to prompt cache
+    /// - `output_tokens`: generated tokens
+    ///
+    /// The user-facing `input_tokens` field is the **total** of all input
+    /// (fresh + cache_read + cache_write). Cost is calculated per-bucket.
+    /// When `cache_write_price` or `cache_read_price` is 0, falls back to `input_price`.
+    pub fn with_cache(
+        model: impl Into<String>,
+        fresh_input_tokens: u64,
+        output_tokens: u64,
+        cache_read_tokens: u64,
+        cache_write_tokens: u64,
+        input_price_per_million: f64,
+        output_price_per_million: f64,
+        cache_write_price_per_million: f64,
+        cache_read_price_per_million: f64,
+    ) -> Self {
+        let model = model.into();
+        let input_price = Self::sanitize_price(input_price_per_million);
+        let output_price = Self::sanitize_price(output_price_per_million);
+        // Fall back to input price when cache prices are unset (negative sentinel).
+        // Explicit 0.0 means "free" (no charge for cached tokens).
+        let cache_write_price = if cache_write_price_per_million >= 0.0
+            && cache_write_price_per_million.is_finite()
+        {
+            cache_write_price_per_million
+        } else {
+            input_price
+        };
+        let cache_read_price = if cache_read_price_per_million >= 0.0
+            && cache_read_price_per_million.is_finite()
+        {
+            cache_read_price_per_million
+        } else {
+            input_price
+        };
+
+        // User-visible totals: all input lumped together, output separate.
+        let total_input = fresh_input_tokens
+            .saturating_add(cache_read_tokens)
+            .saturating_add(cache_write_tokens);
+        let total_tokens = total_input.saturating_add(output_tokens);
+
+        // Actual cost per bucket.
+        let fresh_cost = (fresh_input_tokens as f64 / 1_000_000.0) * input_price;
+        let cache_write_cost = (cache_write_tokens as f64 / 1_000_000.0) * cache_write_price;
+        let cache_read_cost = (cache_read_tokens as f64 / 1_000_000.0) * cache_read_price;
+        let output_cost = (output_tokens as f64 / 1_000_000.0) * output_price;
+        let cost_usd = fresh_cost + cache_write_cost + cache_read_cost + output_cost;
 
         Self {
             model,
-            input_tokens,
+            input_tokens: total_input,
             output_tokens,
             total_tokens,
             cost_usd,

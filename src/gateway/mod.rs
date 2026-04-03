@@ -1273,7 +1273,18 @@ async fn persist_pairing_tokens(config: Arc<Mutex<Config>>, pairing: &PairingGua
 }
 
 /// Simple chat for webhook endpoint (no tools, for backward compatibility and testing).
-async fn run_gateway_chat_simple(state: &AppState, message: &str) -> anyhow::Result<String> {
+/// Result of a simple gateway chat including optional token usage.
+struct GatewayChatResult {
+    text: String,
+    /// Total input tokens (including cached) for observer events.
+    total_input_tokens: Option<u64>,
+    output_tokens: Option<u64>,
+    /// Total tokens (input + output + cache) as computed by cost tracker.
+    total_tokens: Option<u64>,
+    cost_usd: Option<f64>,
+}
+
+async fn run_gateway_chat_simple(state: &AppState, message: &str) -> anyhow::Result<GatewayChatResult> {
     let user_messages = vec![ChatMessage::user(message)];
 
     // Keep webhook/gateway prompts aligned with channel behavior by injecting
@@ -1298,10 +1309,64 @@ async fn run_gateway_chat_simple(state: &AppState, message: &str) -> anyhow::Res
     let prepared =
         crate::multimodal::prepare_messages_for_provider(&messages, &multimodal_config).await?;
 
-    state
+    let request = crate::providers::ChatRequest {
+        messages: &prepared.messages,
+        tools: None,
+    };
+    let response = state
         .provider
-        .chat_with_history(&prepared.messages, &state.model, state.temperature)
-        .await
+        .chat(request, &state.model, state.temperature)
+        .await?;
+
+    let text = response
+        .text
+        .ok_or_else(|| anyhow::anyhow!("No response from provider"))?;
+
+    // Record cost if tracker is available.
+    // Single config snapshot to avoid TOCTOU between provider_name and prices.
+    let (total_input_tokens, output_tokens, total_tokens, cost_usd) =
+        if let (Some(ref tracker), Some(ref usage)) = (&state.cost_tracker, &response.usage) {
+            let config_snapshot = state.config.lock().clone();
+            let provider_name = config_snapshot
+                .default_provider
+                .as_deref()
+                .unwrap_or("unknown");
+            let result = crate::agent::cost::record_cost_direct(
+                tracker,
+                &config_snapshot.cost.prices,
+                provider_name,
+                &state.model,
+                usage,
+            );
+            // Use total_tokens from cost tracker (includes cache tokens),
+            // not just input_tokens + output_tokens from raw usage.
+            let raw_input = usage.input_tokens.unwrap_or(0)
+                + usage.cached_input_tokens.unwrap_or(0)
+                + usage.cache_creation_input_tokens.unwrap_or(0);
+            let total_input = if raw_input > 0 { Some(raw_input) } else { usage.input_tokens };
+            match result {
+                Some((tracker_total, cost)) => {
+                    tracing::info!(
+                        model = %state.model,
+                        total_tokens = tracker_total,
+                        cost_usd = cost,
+                        "Webhook cost recorded"
+                    );
+                    (total_input, usage.output_tokens, Some(tracker_total), Some(cost))
+                }
+                None => (total_input, usage.output_tokens, None, None),
+            }
+        } else {
+            (None, None, None, None)
+        };
+
+    Ok(GatewayChatResult {
+        text,
+        total_input_tokens,
+        output_tokens,
+        total_tokens,
+        cost_usd,
+    })
 }
 
 /// Full-featured chat with tools for channel handlers (WhatsApp, Linq, Nextcloud Talk).
@@ -1451,7 +1516,7 @@ async fn handle_webhook(
         });
 
     match run_gateway_chat_simple(&state, message).await {
-        Ok(response) => {
+        Ok(result) => {
             let duration = started_at.elapsed();
             state
                 .observer
@@ -1461,8 +1526,8 @@ async fn handle_webhook(
                     duration,
                     success: true,
                     error_message: None,
-                    input_tokens: None,
-                    output_tokens: None,
+                    input_tokens: result.total_input_tokens,
+                    output_tokens: result.output_tokens,
                 });
             state.observer.record_metric(
                 &crate::observability::traits::ObserverMetric::RequestLatency(duration),
@@ -1473,11 +1538,11 @@ async fn handle_webhook(
                     provider: provider_label,
                     model: model_label,
                     duration,
-                    tokens_used: None,
-                    cost_usd: None,
+                    tokens_used: result.total_tokens,
+                    cost_usd: result.cost_usd,
                 });
 
-            let body = serde_json::json!({"response": response, "model": state.model});
+            let body = serde_json::json!({"response": result.text, "model": state.model});
             (StatusCode::OK, Json(body))
         }
         Err(e) => {

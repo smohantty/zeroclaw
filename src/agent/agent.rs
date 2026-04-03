@@ -71,6 +71,12 @@ pub struct Agent {
     /// When MCP deferred loading is enabled, tools are activated via `tool_search`
     /// and stored here for lookup during tool execution.
     activated_tools: Option<Arc<std::sync::Mutex<crate::tools::ActivatedToolSet>>>,
+    /// Cost tracker for recording token usage per LLM call.
+    cost_tracker: Option<Arc<crate::cost::CostTracker>>,
+    /// Provider name used for cost pricing lookup.
+    provider_name: String,
+    /// Per-model pricing map for cost calculation.
+    cost_prices: std::collections::HashMap<String, crate::config::schema::ModelPricing>,
 }
 
 pub struct AgentBuilder {
@@ -99,6 +105,9 @@ pub struct AgentBuilder {
     security_summary: Option<String>,
     autonomy_level: Option<crate::security::AutonomyLevel>,
     activated_tools: Option<Arc<std::sync::Mutex<crate::tools::ActivatedToolSet>>>,
+    cost_tracker: Option<Arc<crate::cost::CostTracker>>,
+    provider_name: Option<String>,
+    cost_prices: Option<std::collections::HashMap<String, crate::config::schema::ModelPricing>>,
 }
 
 impl AgentBuilder {
@@ -129,6 +138,9 @@ impl AgentBuilder {
             security_summary: None,
             autonomy_level: None,
             activated_tools: None,
+            cost_tracker: None,
+            provider_name: None,
+            cost_prices: None,
         }
     }
 
@@ -269,6 +281,24 @@ impl AgentBuilder {
         self
     }
 
+    pub fn cost_tracker(mut self, tracker: Option<Arc<crate::cost::CostTracker>>) -> Self {
+        self.cost_tracker = tracker;
+        self
+    }
+
+    pub fn provider_name(mut self, name: String) -> Self {
+        self.provider_name = Some(name);
+        self
+    }
+
+    pub fn cost_prices(
+        mut self,
+        prices: std::collections::HashMap<String, crate::config::schema::ModelPricing>,
+    ) -> Self {
+        self.cost_prices = Some(prices);
+        self
+    }
+
     pub fn build(self) -> Result<Agent> {
         let mut tools = self
             .tools
@@ -325,6 +355,9 @@ impl AgentBuilder {
                 .autonomy_level
                 .unwrap_or(crate::security::AutonomyLevel::Supervised),
             activated_tools: self.activated_tools,
+            cost_tracker: self.cost_tracker,
+            provider_name: self.provider_name.unwrap_or_else(|| "unknown".to_string()),
+            cost_prices: self.cost_prices.unwrap_or_default(),
         })
     }
 }
@@ -527,6 +560,11 @@ impl Agent {
             None
         };
 
+        let cost_tracker = crate::cost::CostTracker::get_or_init_global(
+            config.cost.clone(),
+            &config.workspace_dir,
+        );
+
         Agent::builder()
             .provider(provider)
             .tools(tools)
@@ -556,6 +594,9 @@ impl Agent {
             .security_summary(Some(security.prompt_summary()))
             .autonomy_level(config.autonomy.level)
             .activated_tools(activated_tools)
+            .cost_tracker(cost_tracker)
+            .provider_name(provider_name.to_string())
+            .cost_prices(config.cost.prices.clone())
             .build()
     }
 
@@ -601,6 +642,21 @@ impl Agent {
             autonomy_level: self.autonomy_level,
         };
         self.prompt_builder.build(&ctx)
+    }
+
+    /// Record cost from a ChatResponse's usage field (if available).
+    /// `model` should be the effective/resolved model used for the request,
+    /// not necessarily `self.model_name` (which may differ after routing).
+    fn record_response_cost(&self, model: &str, response: &crate::providers::ChatResponse) {
+        if let (Some(ref tracker), Some(ref usage)) = (&self.cost_tracker, &response.usage) {
+            super::cost::record_cost_direct(
+                tracker,
+                &self.cost_prices,
+                &self.provider_name,
+                model,
+                usage,
+            );
+        }
     }
 
     async fn execute_tool_call(&self, call: &ParsedToolCall) -> ToolExecutionResult {
@@ -841,6 +897,9 @@ impl Agent {
                 Err(err) => return Err(err),
             };
 
+            // Record cost from the LLM response.
+            self.record_response_cost(&effective_model, &response);
+
             let (text, calls) = self.tool_dispatcher.parse_response(&response);
             if calls.is_empty() {
                 let final_text = if text.is_empty() {
@@ -1078,6 +1137,7 @@ impl Agent {
             // check for tool calls via the dispatcher.
             let response = if got_stream {
                 // Build a synthetic ChatResponse from streamed text
+                // NOTE: Streaming does not provide token usage; cost is not recorded.
                 crate::providers::ChatResponse {
                     text: Some(streamed_text),
                     tool_calls: streamed_tool_calls,
@@ -1106,6 +1166,9 @@ impl Agent {
                     Err(err) => return Err(err),
                 }
             };
+
+            // Record cost from the LLM response (non-streaming path provides usage).
+            self.record_response_cost(&effective_model, &response);
 
             let (text, calls) = self.tool_dispatcher.parse_response(&response);
             if calls.is_empty() {

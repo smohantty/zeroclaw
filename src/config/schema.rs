@@ -1823,6 +1823,16 @@ pub struct ModelPricing {
     /// Output price per 1M tokens
     #[serde(default)]
     pub output: f64,
+
+    /// Cache write price per 1M tokens (Anthropic: 1.25x input).
+    /// Omit or set negative to fall back to input price. Set to 0 for free.
+    #[serde(default = "default_cache_price_unset")]
+    pub cache_write: f64,
+
+    /// Cache read price per 1M tokens (Anthropic: 0.1x input).
+    /// Omit or set negative to fall back to input price. Set to 0 for free.
+    #[serde(default = "default_cache_price_unset")]
+    pub cache_read: f64,
 }
 
 fn default_daily_limit() -> f64 {
@@ -1835,6 +1845,10 @@ fn default_monthly_limit() -> f64 {
 
 fn default_warn_percent() -> u8 {
     80
+}
+
+fn default_cache_price_unset() -> f64 {
+    -1.0
 }
 
 fn default_cost_enabled() -> bool {
@@ -1859,12 +1873,14 @@ impl Default for CostConfig {
 fn get_default_pricing() -> std::collections::HashMap<String, ModelPricing> {
     let mut prices = std::collections::HashMap::new();
 
-    // Anthropic models
+    // Anthropic models (cache_write = 1.25x input, cache_read = 0.1x input)
     prices.insert(
         "anthropic/claude-sonnet-4-20250514".into(),
         ModelPricing {
             input: 3.0,
             output: 15.0,
+            cache_write: 3.75,
+            cache_read: 0.30,
         },
     );
     prices.insert(
@@ -1872,6 +1888,8 @@ fn get_default_pricing() -> std::collections::HashMap<String, ModelPricing> {
         ModelPricing {
             input: 15.0,
             output: 75.0,
+            cache_write: 18.75,
+            cache_read: 1.50,
         },
     );
     prices.insert(
@@ -1879,6 +1897,8 @@ fn get_default_pricing() -> std::collections::HashMap<String, ModelPricing> {
         ModelPricing {
             input: 3.0,
             output: 15.0,
+            cache_write: 3.75,
+            cache_read: 0.30,
         },
     );
     prices.insert(
@@ -1886,15 +1906,19 @@ fn get_default_pricing() -> std::collections::HashMap<String, ModelPricing> {
         ModelPricing {
             input: 0.25,
             output: 1.25,
+            cache_write: 0.30,
+            cache_read: 0.03,
         },
     );
 
-    // OpenAI models
+    // OpenAI models (cache pricing not applicable — set to 0)
     prices.insert(
         "openai/gpt-4o".into(),
         ModelPricing {
             input: 5.0,
             output: 15.0,
+            cache_write: -1.0,
+            cache_read: -1.0,
         },
     );
     prices.insert(
@@ -1902,6 +1926,8 @@ fn get_default_pricing() -> std::collections::HashMap<String, ModelPricing> {
         ModelPricing {
             input: 0.15,
             output: 0.60,
+            cache_write: -1.0,
+            cache_read: -1.0,
         },
     );
     prices.insert(
@@ -1909,6 +1935,8 @@ fn get_default_pricing() -> std::collections::HashMap<String, ModelPricing> {
         ModelPricing {
             input: 15.0,
             output: 60.0,
+            cache_write: -1.0,
+            cache_read: -1.0,
         },
     );
 
@@ -1918,6 +1946,8 @@ fn get_default_pricing() -> std::collections::HashMap<String, ModelPricing> {
         ModelPricing {
             input: 0.10,
             output: 0.40,
+            cache_write: -1.0,
+            cache_read: -1.0,
         },
     );
     prices.insert(
@@ -1925,6 +1955,8 @@ fn get_default_pricing() -> std::collections::HashMap<String, ModelPricing> {
         ModelPricing {
             input: 1.25,
             output: 5.0,
+            cache_write: -1.0,
+            cache_read: -1.0,
         },
     );
 

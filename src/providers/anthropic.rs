@@ -521,6 +521,7 @@ impl AnthropicProvider {
             input_tokens: u.input_tokens,
             output_tokens: u.output_tokens,
             cached_input_tokens: u.cache_read_input_tokens,
+            cache_creation_input_tokens: u.cache_creation_input_tokens,
         });
 
         for block in response.content {

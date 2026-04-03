@@ -3987,10 +3987,28 @@ pub async fn run(
         }
     });
 
+    // ── Cost tracking ────────────────────────────────────────────
+    let cost_tracker =
+        crate::cost::CostTracker::get_or_init_global(config.cost.clone(), &config.workspace_dir);
+    let cost_tracking_context: Option<super::cost::ToolLoopCostTrackingContext> =
+        cost_tracker.as_ref().map(|tracker| {
+            super::cost::ToolLoopCostTrackingContext::new(
+                std::sync::Arc::clone(tracker),
+                std::sync::Arc::new(config.cost.prices.clone()),
+            )
+        });
+
     // ── Execute ──────────────────────────────────────────────────
     let start = Instant::now();
 
     let mut final_output = String::new();
+
+    // Snapshot cost before the run so AgentEnd reports per-run delta, not cumulative.
+    let cost_before = cost_tracker
+        .as_ref()
+        .and_then(|ct| ct.get_summary().ok())
+        .map(|s| (s.total_tokens, s.session_cost_usd))
+        .unwrap_or((0, 0.0));
 
     // Save the base system prompt before any thinking modifications so
     // the interactive loop can restore it between turns.
@@ -4081,7 +4099,7 @@ pub async fn run(
         #[allow(unused_assignments)]
         let mut response = String::new();
         loop {
-            match run_tool_call_loop(
+            let loop_fut = run_tool_call_loop(
                 provider.as_ref(),
                 &mut history,
                 &tools_registry,
@@ -4106,8 +4124,10 @@ pub async fn run(
                 config.agent.max_tool_result_chars,
                 config.agent.max_context_tokens,
                 None, // shared_budget
-            )
-            .await
+            );
+            match super::cost::TOOL_LOOP_COST_TRACKING_CONTEXT
+                .scope(cost_tracking_context.clone(), loop_fut)
+                .await
             {
                 Ok(resp) => {
                     response = resp;
@@ -4385,7 +4405,7 @@ pub async fn run(
             });
 
             let response = loop {
-                match run_tool_call_loop(
+                let loop_fut = run_tool_call_loop(
                     provider.as_ref(),
                     &mut history,
                     &tools_registry,
@@ -4410,8 +4430,10 @@ pub async fn run(
                     config.agent.max_tool_result_chars,
                     config.agent.max_context_tokens,
                     None, // shared_budget
-                )
-                .await
+                );
+                match super::cost::TOOL_LOOP_COST_TRACKING_CONTEXT
+                    .scope(cost_tracking_context.clone(), loop_fut)
+                    .await
                 {
                     Ok(resp) => break resp,
                     Err(e) => {
@@ -4562,12 +4584,21 @@ pub async fn run(
     }
 
     let duration = start.elapsed();
+    let (run_tokens, run_cost) = cost_tracker
+        .as_ref()
+        .and_then(|ct| ct.get_summary().ok())
+        .map(|s| {
+            let tokens = s.total_tokens.saturating_sub(cost_before.0);
+            let cost = s.session_cost_usd - cost_before.1;
+            (Some(tokens), Some(cost))
+        })
+        .unwrap_or((None, None));
     observer.record_event(&ObserverEvent::AgentEnd {
         provider: provider_name.to_string(),
         model: model_name.to_string(),
         duration,
-        tokens_used: None,
-        cost_usd: None,
+        tokens_used: run_tokens,
+        cost_usd: run_cost,
     });
 
     Ok(final_output)
@@ -9467,6 +9498,7 @@ Let me check the result."#;
                     input_tokens: Some(1_000),
                     output_tokens: Some(200),
                     cached_input_tokens: None,
+                    cache_creation_input_tokens: None,
                 }),
                 reasoning_content: None,
             }]))),
@@ -9483,6 +9515,8 @@ Let me check the result."#;
             ModelPricing {
                 input: 3.0,
                 output: 15.0,
+                cache_write: -1.0,
+                cache_read: -1.0,
             },
         )]);
         let tracker = Arc::new(CostTracker::new(cost_config.clone(), workspace.path()).unwrap());
@@ -9569,6 +9603,8 @@ Let me check the result."#;
                 ModelPricing {
                     input: 1.0,
                     output: 1.0,
+                    cache_write: 0.0,
+                    cache_read: 0.0,
                 },
             )])),
         );
@@ -9627,6 +9663,7 @@ Let me check the result."#;
                     input_tokens: Some(500),
                     output_tokens: Some(100),
                     cached_input_tokens: None,
+                    cache_creation_input_tokens: None,
                 }),
                 reasoning_content: None,
             }]))),

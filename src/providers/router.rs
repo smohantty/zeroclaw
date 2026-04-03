@@ -822,7 +822,7 @@ mod tests {
     fn make_pricing(entries: Vec<(&str, f64, f64)>) -> HashMap<String, ModelPricing> {
         entries
             .into_iter()
-            .map(|(model, input, output)| (model.to_string(), ModelPricing { input, output }))
+            .map(|(model, input, output)| (model.to_string(), ModelPricing { input, output, cache_write: -1.0, cache_read: -1.0 }))
             .collect()
     }
 

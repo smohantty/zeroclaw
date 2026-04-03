@@ -26,6 +26,54 @@ tokio::task_local! {
     pub(crate) static TOOL_LOOP_COST_TRACKING_CONTEXT: Option<ToolLoopCostTrackingContext>;
 }
 
+/// 3-tier model pricing lookup: direct name → provider/model → suffix after last `/`.
+fn lookup_pricing<'a>(
+    prices: &'a std::collections::HashMap<String, ModelPricing>,
+    provider_name: &str,
+    model: &str,
+) -> Option<&'a ModelPricing> {
+    prices
+        .get(model)
+        .or_else(|| prices.get(&format!("{provider_name}/{model}")))
+        .or_else(|| {
+            model
+                .rsplit_once('/')
+                .and_then(|(_, suffix)| prices.get(suffix))
+        })
+}
+
+/// Build a `CostTokenUsage` from provider token usage and pricing,
+/// accounting for cache read/write token buckets.
+fn build_cost_usage(
+    model: &str,
+    usage: &crate::providers::traits::TokenUsage,
+    pricing: Option<&ModelPricing>,
+) -> Option<CostTokenUsage> {
+    let input_tokens = usage.input_tokens.unwrap_or(0);
+    let output_tokens = usage.output_tokens.unwrap_or(0);
+    let cache_read = usage.cached_input_tokens.unwrap_or(0);
+    let cache_write = usage.cache_creation_input_tokens.unwrap_or(0);
+    let total = input_tokens
+        .saturating_add(output_tokens)
+        .saturating_add(cache_read)
+        .saturating_add(cache_write);
+    if total == 0 {
+        return None;
+    }
+
+    Some(CostTokenUsage::with_cache(
+        model,
+        input_tokens,
+        output_tokens,
+        cache_read,
+        cache_write,
+        pricing.map_or(0.0, |p| p.input),
+        pricing.map_or(0.0, |p| p.output),
+        pricing.map_or(0.0, |p| p.cache_write),
+        pricing.map_or(0.0, |p| p.cache_read),
+    ))
+}
+
 /// Record token usage from an LLM response via the task-local cost tracker.
 /// Returns `(total_tokens, cost_usd)` on success, `None` when not scoped or no usage.
 pub(crate) fn record_tool_loop_cost_usage(
@@ -33,34 +81,13 @@ pub(crate) fn record_tool_loop_cost_usage(
     model: &str,
     usage: &crate::providers::traits::TokenUsage,
 ) -> Option<(u64, f64)> {
-    let input_tokens = usage.input_tokens.unwrap_or(0);
-    let output_tokens = usage.output_tokens.unwrap_or(0);
-    let total_tokens = input_tokens.saturating_add(output_tokens);
-    if total_tokens == 0 {
-        return None;
-    }
-
     let ctx = TOOL_LOOP_COST_TRACKING_CONTEXT
         .try_with(Clone::clone)
         .ok()
         .flatten()?;
-    // 3-tier model pricing lookup: direct name → provider/model → suffix after last `/`
-    let pricing = ctx
-        .prices
-        .get(model)
-        .or_else(|| ctx.prices.get(&format!("{provider_name}/{model}")))
-        .or_else(|| {
-            model
-                .rsplit_once('/')
-                .and_then(|(_, suffix)| ctx.prices.get(suffix))
-        });
-    let cost_usage = CostTokenUsage::new(
-        model,
-        input_tokens,
-        output_tokens,
-        pricing.map_or(0.0, |entry| entry.input),
-        pricing.map_or(0.0, |entry| entry.output),
-    );
+
+    let pricing = lookup_pricing(&ctx.prices, provider_name, model);
+    let cost_usage = build_cost_usage(model, usage, pricing)?;
 
     if pricing.is_none() {
         tracing::debug!(
@@ -75,6 +102,37 @@ pub(crate) fn record_tool_loop_cost_usage(
             provider = provider_name,
             model,
             "Failed to record cost tracking usage: {error}"
+        );
+    }
+
+    Some((cost_usage.total_tokens, cost_usage.cost_usd))
+}
+
+/// Record token usage directly given a tracker and pricing map (no task-local needed).
+/// Returns `(total_tokens, cost_usd)` on success, `None` when no usage.
+pub(crate) fn record_cost_direct(
+    tracker: &CostTracker,
+    prices: &std::collections::HashMap<String, ModelPricing>,
+    provider_name: &str,
+    model: &str,
+    usage: &crate::providers::traits::TokenUsage,
+) -> Option<(u64, f64)> {
+    let pricing = lookup_pricing(prices, provider_name, model);
+    let cost_usage = build_cost_usage(model, usage, pricing)?;
+
+    if pricing.is_none() {
+        tracing::debug!(
+            provider = provider_name,
+            model,
+            "Cost tracking (direct) recorded token usage with zero pricing (no pricing entry found)"
+        );
+    }
+
+    if let Err(error) = tracker.record_usage(cost_usage.clone()) {
+        tracing::warn!(
+            provider = provider_name,
+            model,
+            "Failed to record cost tracking usage (direct): {error}"
         );
     }
 
