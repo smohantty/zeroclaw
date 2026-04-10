@@ -48,9 +48,12 @@ Every workspace crate carries a stability tier per the Microkernel Architecture 
 | `zeroclaw-tool-call-parser` | Beta | Stable at v0.8.0 |
 | `zeroclaw-channels` | Experimental | Plugin migration at v1.0.0 |
 | `zeroclaw-tools` | Experimental | Plugin migration at v1.0.0 |
-| `zeroclaw-runtime` | Experimental | Decomposition at v0.8.0 |
+| `zeroclaw-runtime` | Experimental | Agent runtime (agent loop, security, cron, SOP, skills, observability) |
+| `zeroclaw-gateway` | Experimental | Separate binary at v0.9.0 |
+| `zeroclaw-tui` | Experimental | TUI onboarding wizard |
+| `zeroclaw-plugins` | Experimental | WASM plugin system — foundation for v1.0.0 plugin ecosystem |
+| `zeroclaw-hardware` | Experimental | USB discovery, peripherals, serial |
 | `zeroclaw-macros` | Beta | Tightly coupled to config schema |
-| Gateway (in misc) | Experimental | Separate binary at v0.9.0 |
 
 **Tiers**: Stable = covered by breaking-change policy. Beta = breaking changes permitted in MINOR with changelog notes. Experimental = no stability guarantee.
 

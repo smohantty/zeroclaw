@@ -17,7 +17,6 @@
 pub mod acp_server;
 pub mod cli;
 #[cfg(feature = "channel-matrix")]
-#[cfg(feature = "channel-matrix")]
 pub mod matrix;
 pub mod media_pipeline;
 pub mod mqtt;
