@@ -103,7 +103,7 @@ impl Tool for CronUpdateTool {
                             "type": "boolean",
                             "description": "If true, delete the job automatically after its first successful run"
                         },
-                        // NOTE: oneOf is correct for OpenAI-compatible APIs (including OpenRouter).
+                        // NOTE: oneOf is correct for OpenAI-compatible APIs.
                         // Gemini does not support oneOf in tool schemas; if Gemini native tool calling
                         // is ever wired up, SchemaCleanr::clean_for_gemini must be applied before
                         // tool specs are sent. See src/tools/schema.rs.

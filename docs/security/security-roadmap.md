@@ -39,7 +39,7 @@ ZeroClaw already has **excellent application-layer security**:
 | **Command Allowlist** | Unknown | ✅ Yes | ✅ Yes | ✅ Yes |
 | **Path Blocking** | Unknown | ✅ Yes | ✅ Yes | ✅ Yes |
 | **Injection Protection** | Unknown | ✅ Yes | ✅ Yes | ✅ Yes |
-| **OS Sandbox** | No | ❌ No | ✅ Firejail/Landlock | ✅ Container/namespaces |
+| **OS Sandbox** | No | ❌ No | ✅ Firejail/Bubblewrap | ✅ Container/namespaces |
 | **Resource Limits** | No | ❌ No | ✅ cgroups/Monitor | ✅ Full cgroups |
 | **Audit Logging** | No | ❌ No | ✅ HMAC-signed | ✅ SIEM integration |
 | **Security Score** | C | **B+** | **A-** | **A+** |
@@ -53,7 +53,6 @@ ZeroClaw already has **excellent application-layer security**:
 
 | Task | File | Effort | Impact |
 |------|------|--------|-------|
-| Landlock filesystem sandbox | `src/security/landlock.rs` | 2 days | High |
 | Memory monitoring + OOM kill | `src/resources/memory.rs` | 1 day | High |
 | CPU timeout per command | `src/tools/shell.rs` | 1 day | High |
 | Basic audit logging | `src/security/audit.rs` | 2 days | Medium |
@@ -90,14 +89,12 @@ ZeroClaw already has **excellent application-layer security**:
 
 | Task | Effort | Impact |
 |------|--------|-------|
-| Docker sandbox mode option | 3 days | High |
 | Certificate pinning for channels | 2 days | Medium |
 | Signed config verification | 2 days | Medium |
 | SIEM-compatible audit export | 2 days | Medium |
 | Security self-test (`zeroclaw audit --check`) | 1 day | Low |
 
 **Deliverables**:
-- Optional Docker-based execution isolation
 - HTTPS certificate pinning for channel webhooks
 - Config file signature verification
 - JSON/CSV audit export for external analysis
@@ -113,7 +110,7 @@ level = "strict"  # relaxed | default | strict | paranoid
 # Sandbox configuration
 [security.sandbox]
 enabled = true
-backend = "auto"  # auto | firejail | bubblewrap | landlock | docker | none
+backend = "auto"  # auto | firejail | bubblewrap | none
 
 # Resource limits
 [resources]

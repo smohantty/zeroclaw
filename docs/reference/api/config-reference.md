@@ -14,33 +14,25 @@ ZeroClaw logs the resolved config on startup at `INFO` level:
 
 - `Config loaded` with fields: `path`, `workspace`, `source`, `initialized`
 
-Schema export command:
-
-- `zeroclaw config schema` (prints JSON Schema draft 2020-12 to stdout)
-
 ## Core Keys
 
 | Key | Default | Notes |
 |---|---|---|
-| `default_provider` | `openrouter` | provider ID or alias |
-| `default_model` | `anthropic/claude-sonnet-4-6` | model routed through selected provider |
+| `default_provider` | `openai` | provider ID or alias |
+| `default_model` | `gpt-5.2` | model routed through selected provider |
 | `default_temperature` | `0.7` | model temperature |
 
 ## `[observability]`
 
 | Key | Default | Purpose |
 |---|---|---|
-| `backend` | `none` | Observability backend: `none`, `noop`, `log`, `prometheus`, `otel`, `opentelemetry`, or `otlp` |
-| `otel_endpoint` | `http://localhost:4318` | OTLP HTTP endpoint used when backend is `otel` |
-| `otel_service_name` | `zeroclaw` | Service name emitted to OTLP collector |
+| `backend` | `none` | Observability backend: `none`, `noop`, `log`, or `verbose` |
 | `runtime_trace_mode` | `none` | Runtime trace storage mode: `none`, `rolling`, or `full` |
 | `runtime_trace_path` | `state/runtime-trace.jsonl` | Runtime trace JSONL path (relative to workspace unless absolute) |
 | `runtime_trace_max_entries` | `200` | Maximum retained events when `runtime_trace_mode = "rolling"` |
 
 Notes:
 
-- `backend = "otel"` uses OTLP HTTP export with a blocking exporter client so spans and metrics can be emitted safely from non-Tokio contexts.
-- Alias values `opentelemetry` and `otlp` map to the same OTel backend.
 - Runtime traces are intended for debugging tool-call failures and malformed model tool payloads. They can contain model output text, so keep this disabled by default on shared hosts.
 - Query runtime traces with:
   - `zeroclaw doctor traces --limit 20`
@@ -51,9 +43,7 @@ Example:
 
 ```toml
 [observability]
-backend = "otel"
-otel_endpoint = "http://localhost:4318"
-otel_service_name = "zeroclaw"
+backend = "log"
 runtime_trace_mode = "rolling"
 runtime_trace_path = "state/runtime-trace.jsonl"
 runtime_trace_max_entries = 200
@@ -64,12 +54,12 @@ runtime_trace_max_entries = 200
 Provider selection can also be controlled by environment variables. Precedence is:
 
 1. `ZEROCLAW_PROVIDER` (explicit override, always wins when non-empty)
-2. `PROVIDER` (legacy fallback, only applied when config provider is unset or still `openrouter`)
+2. `PROVIDER` (legacy fallback, only applied when config provider is unset)
 3. `default_provider` in `config.toml`
 
 Operational note for container users:
 
-- If your `config.toml` sets an explicit custom provider like `custom:https://.../v1`, a default `PROVIDER=openrouter` from Docker/container env will no longer replace it.
+- If your `config.toml` sets an explicit custom provider like `custom:https://.../v1`, a default `PROVIDER=openai` from Docker/container env will no longer replace it.
 - Use `ZEROCLAW_PROVIDER` when you intentionally want runtime env to override a non-default configured provider.
 
 ## `[agent]`
@@ -182,7 +172,7 @@ Example:
 
 ```toml
 [reliability]
-fallback_providers = ["anthropic", "groq", "openrouter"]
+fallback_providers = ["anthropic", "groq"]
 api_keys = ["sk-backup-1", "sk-backup-2"]
 
 [reliability.model_fallbacks]
@@ -265,7 +255,7 @@ Delegate sub-agent configurations. Each key under `[agents]` defines a named sub
 
 | Key | Default | Purpose |
 |---|---|---|
-| `provider` | _required_ | Provider name (e.g. `"ollama"`, `"openrouter"`, `"anthropic"`) |
+| `provider` | _required_ | Provider name (e.g. `"ollama"`, `"openai"`, `"anthropic"`) |
 | `model` | _required_ | Model name for the sub-agent |
 | `system_prompt` | unset | Optional system prompt override for the sub-agent |
 | `api_key` | unset | Optional API key override (stored encrypted when `secrets.encrypt = true`) |
@@ -288,8 +278,8 @@ Notes:
 
 ```toml
 [agents.researcher]
-provider = "openrouter"
-model = "anthropic/claude-sonnet-4-6"
+provider = "openai"
+model = "gpt-5.2"
 system_prompt = "You are a research assistant."
 max_depth = 2
 agentic = true
@@ -342,22 +332,6 @@ Notes:
 - Precedence for enable flag: `ZEROCLAW_OPEN_SKILLS_ENABLED` → `skills.open_skills_enabled` in `config.toml` → default `false`.
 - `prompt_injection_mode = "compact"` is recommended on low-context local models to reduce startup prompt size while keeping skill files available on demand.
 - Skill loading and `zeroclaw skills install` both apply a static security audit. Skills that contain symlinks, script-like files, high-risk shell payload snippets, or unsafe markdown link traversal are rejected.
-
-## `[composio]`
-
-| Key | Default | Purpose |
-|---|---|---|
-| `enabled` | `false` | Enable Composio managed OAuth tools |
-| `api_key` | unset | Composio API key used by the `composio` tool |
-| `entity_id` | `default` | Default `user_id` sent on connect/execute calls |
-
-Notes:
-
-- Backward compatibility: legacy `enable = true` is accepted as an alias for `enabled = true`.
-- If `enabled = false` or `api_key` is missing, the `composio` tool is not registered.
-- ZeroClaw requests Composio v3 tools with `toolkit_versions=latest` and executes tools with `version="latest"` to avoid stale default tool revisions.
-- Typical flow: call `connect`, complete browser OAuth, then run `execute` for the desired tool action.
-- If Composio returns a missing connected-account reference error, call `list_accounts` (optionally with `app`) and pass the returned `connected_account_id` to `execute`.
 
 ## `[cost]`
 
@@ -451,63 +425,6 @@ Notes:
 - Use exact domain or subdomain matching (e.g. `"api.example.com"`, `"example.com"`), or `"*"` to allow any public domain.
 - Local/private targets are still blocked even when `"*"` is configured.
 
-## `[google_workspace]`
-
-| Key | Default | Purpose |
-|---|---|---|
-| `enabled` | `false` | Enable the `google_workspace` tool |
-| `credentials_path` | unset | Path to Google service account or OAuth credentials JSON |
-| `default_account` | unset | Default Google account passed as `--account` to `gws` |
-| `allowed_services` | (built-in list) | Services the agent may access: `drive`, `gmail`, `calendar`, `sheets`, `docs`, `slides`, `tasks`, `people`, `chat`, `classroom`, `forms`, `keep`, `meet`, `events` |
-| `rate_limit_per_minute` | `60` | Maximum `gws` calls per minute |
-| `timeout_secs` | `30` | Per-call execution timeout before kill |
-| `audit_log` | `false` | Emit an `INFO` log line for every `gws` call |
-
-### `[[google_workspace.allowed_operations]]`
-
-When this array is non-empty, only exact matches pass. An entry matches a call when
-`service`, `resource`, `sub_resource`, and `method` all agree. When the array is
-empty (the default), all combinations within `allowed_services` are available.
-
-| Key | Required | Purpose |
-|---|---|---|
-| `service` | yes | Service identifier (must match an entry in `allowed_services`) |
-| `resource` | yes | Top-level resource name (`users` for Gmail, `files` for Drive, `events` for Calendar) |
-| `sub_resource` | no | Sub-resource for 4-segment gws commands. Gmail operations use `gws gmail users <sub_resource> <method>`, so Gmail entries need `sub_resource` to match at runtime. Drive, Calendar, and most other services use 3-segment commands and omit it. |
-| `methods` | yes | One or more method names allowed on that resource/sub_resource |
-
-Gmail uses `gws gmail users <sub_resource> <method>` for all operations. A Gmail
-entry without `sub_resource` will never match at runtime. Drive and Calendar use
-3-segment commands and omit `sub_resource`.
-
-```toml
-[google_workspace]
-enabled = true
-default_account = "owner@company.com"
-allowed_services = ["gmail"]
-audit_log = true
-
-[[google_workspace.allowed_operations]]
-service = "gmail"
-resource = "users"
-sub_resource = "messages"
-methods = ["list", "get"]
-
-[[google_workspace.allowed_operations]]
-service = "gmail"
-resource = "users"
-sub_resource = "drafts"
-methods = ["list", "get", "create", "update"]
-```
-
-Notes:
-
-- Requires `gws` to be installed and authenticated (`gws auth login`). Install: `npm install -g @googleworkspace/cli`.
-- `credentials_path` sets `GOOGLE_APPLICATION_CREDENTIALS` before each call.
-- `allowed_services` defaults to the built-in list if omitted or empty.
-- Validation rejects duplicate `(service, resource)` pairs and duplicate methods within a single entry.
-- See `docs/superpowers/specs/2026-03-19-google-workspace-operation-allowlist.md` for the full policy model and verified workflow examples.
-
 ## `[gateway]`
 
 | Key | Default | Purpose |
@@ -600,7 +517,7 @@ embedding_model = "hint:semantic"
 
 [[model_routes]]
 hint = "reasoning"
-provider = "openrouter"
+provider = "openai"
 model = "provider/model-id"
 
 [[embedding_routes]]
@@ -773,65 +690,6 @@ Notes:
 - Webhook endpoint is `POST /nextcloud-talk`.
 - `ZEROCLAW_NEXTCLOUD_TALK_WEBHOOK_SECRET` overrides `webhook_secret` when set.
 - See [nextcloud-talk-setup.md](../../setup-guides/nextcloud-talk-setup.md) for setup and troubleshooting.
-
-## `[hardware]`
-
-Hardware wizard configuration for physical-world access (STM32, probe, serial).
-
-| Key | Default | Purpose |
-|---|---|---|
-| `enabled` | `false` | Whether hardware access is enabled |
-| `transport` | `none` | Transport mode: `"none"`, `"native"`, `"serial"`, or `"probe"` |
-| `serial_port` | unset | Serial port path (e.g. `"/dev/ttyACM0"`) |
-| `baud_rate` | `115200` | Serial baud rate |
-| `probe_target` | unset | Probe target chip (e.g. `"STM32F401RE"`) |
-| `workspace_datasheets` | `false` | Enable workspace datasheet RAG (index PDF schematics for AI pin lookups) |
-
-Notes:
-
-- Use `transport = "serial"` with `serial_port` for USB-serial connections.
-- Use `transport = "probe"` with `probe_target` for debug-probe flashing (e.g. ST-Link).
-- See [hardware-peripherals-design.md](../../hardware/hardware-peripherals-design.md) for protocol details.
-
-## `[peripherals]`
-
-Higher-level peripheral board configuration. Boards become agent tools when enabled.
-
-| Key | Default | Purpose |
-|---|---|---|
-| `enabled` | `false` | Enable peripheral support (boards become agent tools) |
-| `boards` | `[]` | Board configurations |
-| `datasheet_dir` | unset | Path to datasheet docs (relative to workspace) for RAG retrieval |
-
-Each entry in `boards`:
-
-| Key | Default | Purpose |
-|---|---|---|
-| `board` | _required_ | Board type: `"nucleo-f401re"`, `"rpi-gpio"`, `"esp32"`, etc. |
-| `transport` | `serial` | Transport: `"serial"`, `"native"`, `"websocket"` |
-| `path` | unset | Path for serial: `"/dev/ttyACM0"`, `"/dev/ttyUSB0"` |
-| `baud` | `115200` | Baud rate for serial |
-
-```toml
-[peripherals]
-enabled = true
-datasheet_dir = "docs/datasheets"
-
-[[peripherals.boards]]
-board = "nucleo-f401re"
-transport = "serial"
-path = "/dev/ttyACM0"
-baud = 115200
-
-[[peripherals.boards]]
-board = "rpi-gpio"
-transport = "native"
-```
-
-Notes:
-
-- Place `.md`/`.txt` datasheet files named by board (e.g. `nucleo-f401re.md`, `rpi-gpio.md`) in `datasheet_dir` for RAG retrieval.
-- See [hardware-peripherals-design.md](../../hardware/hardware-peripherals-design.md) for board protocol and firmware notes.
 
 ## Security-Relevant Defaults
 

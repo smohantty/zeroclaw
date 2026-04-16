@@ -8,7 +8,6 @@ Last verified: **March 26, 2026**.
 
 | Command | Purpose |
 |---|---|
-| `onboard` | Initialize workspace/config quickly or interactively |
 | `agent` | Run interactive chat or single-message mode |
 | `gateway` | Start webhook and WhatsApp HTTP gateway |
 | `acp` | Start ACP (Agent Control Protocol) server over stdio |
@@ -18,7 +17,6 @@ Last verified: **March 26, 2026**.
 | `status` | Print current configuration and system summary |
 | `estop` | Engage/resume emergency stop levels and inspect estop state |
 | `cron` | Manage scheduled tasks |
-| `models` | Refresh provider model catalogs |
 | `providers` | List provider IDs, aliases, and active provider |
 | `channel` | Manage channels and channel health checks |
 | `integrations` | Inspect integration details |
@@ -26,36 +24,14 @@ Last verified: **March 26, 2026**.
 | `migrate` | Import from external runtimes (currently OpenClaw) |
 | `config` | Manage configuration (view/set properties, export schema) |
 | `completions` | Generate shell completion scripts to stdout |
-| `hardware` | Discover and introspect USB hardware |
-| `peripheral` | Configure and flash peripherals |
 
 ## Command Groups
-
-### `onboard`
-
-- `zeroclaw onboard`
-- `zeroclaw onboard --channels-only`
-- `zeroclaw onboard --force`
-- `zeroclaw onboard --reinit`
-- `zeroclaw onboard --api-key <KEY> --provider <ID> --memory <sqlite|lucid|markdown|none>`
-- `zeroclaw onboard --api-key <KEY> --provider <ID> --model <MODEL_ID> --memory <sqlite|lucid|markdown|none>`
-- `zeroclaw onboard --api-key <KEY> --provider <ID> --model <MODEL_ID> --memory <sqlite|lucid|markdown|none> --force`
-
-`onboard` safety behavior:
-
-- If `config.toml` already exists, onboarding offers two modes:
-  - Full onboarding (overwrite `config.toml`)
-  - Provider-only update (update provider/model/API key while preserving existing channels, tunnel, memory, hooks, and other settings)
-- In non-interactive environments, existing `config.toml` causes a safe refusal unless `--force` is passed.
-- Use `zeroclaw onboard --channels-only` when you only need to rotate channel tokens/allowlists.
-- Use `zeroclaw onboard --reinit` to start fresh. This backs up your existing config directory with a timestamp suffix and creates a new configuration from scratch.
 
 ### `agent`
 
 - `zeroclaw agent`
 - `zeroclaw agent -m "Hello"`
 - `zeroclaw agent --provider <ID> --model <MODEL> --temperature <0.0-2.0>`
-- `zeroclaw agent --peripheral <board:path>`
 
 Tip:
 
@@ -124,18 +100,9 @@ Notes:
 - Mutating schedule/cron actions require `cron.enabled = true`.
 - Shell command payloads for schedule creation (`create` / `add` / `once`) are validated by security command policy before job persistence.
 
-### `models`
-
-- `zeroclaw models refresh`
-- `zeroclaw models refresh --provider <ID>`
-- `zeroclaw models refresh --force`
-
-`models refresh` currently supports live catalog refresh for provider IDs: `openrouter`, `openai`, `anthropic`, `groq`, `mistral`, `deepseek`, `xai`, `together-ai`, `gemini`, `ollama`, `llamacpp`, `sglang`, `vllm`, `astrai`, `venice`, `fireworks`, `cohere`, `moonshot`, `glm`, `zai`, `qwen`, and `nvidia`.
-
 ### `doctor`
 
 - `zeroclaw doctor`
-- `zeroclaw doctor models [--provider <ID>] [--use-cache]`
 - `zeroclaw doctor traces [--limit <N>] [--event <TYPE>] [--contains <TEXT>]`
 - `zeroclaw doctor traces --id <TRACE_ID>`
 
@@ -198,21 +165,15 @@ Skill manifests (`SKILL.toml`) support `prompts` and `[[tools]]`; both are injec
 
 - `zeroclaw config list` — list all properties with current values
 - `zeroclaw config list --secrets` — list only secret (encrypted) fields
-- `zeroclaw config list --filter channels.matrix` — filter by path prefix
 - `zeroclaw config get <path>` — get a single property value (secrets show set/unset status)
 - `zeroclaw config set <path> <value>` — set a property value
-- `zeroclaw config set <path>` — secret fields prompt for masked input; enum fields offer interactive selection
 - `zeroclaw config set --no-interactive <path> <value>` — scripted mode, no prompts
 - `zeroclaw config init <section>` — create an unconfigured section with defaults (`enabled=false`)
 - `zeroclaw config init` — initialize all unconfigured sections
-- `zeroclaw config schema` — print JSON Schema (draft 2020-12) to stdout
 
 Secret fields (API keys, tokens, passwords) are automatically detected via `#[secret]`
 annotations. When setting a secret, input is masked regardless of whether a value is
 provided on the command line.
-
-Enum fields (e.g. `stream-mode`, `search-mode`) offer interactive selection via arrow
-keys when the value is omitted. Provide the value directly to skip the prompt.
 
 Shell tab-completion for property paths is included in `zeroclaw completions <shell>`.
 
@@ -225,20 +186,6 @@ Shell tab-completion for property paths is included in `zeroclaw completions <sh
 - `zeroclaw completions elvish`
 
 `completions` is stdout-only by design so scripts can be sourced directly without log/warning contamination.
-
-### `hardware`
-
-- `zeroclaw hardware discover`
-- `zeroclaw hardware introspect <path>`
-- `zeroclaw hardware info [--chip <chip_name>]`
-
-### `peripheral`
-
-- `zeroclaw peripheral list`
-- `zeroclaw peripheral add <board> <path>`
-- `zeroclaw peripheral flash [--port <serial_port>]`
-- `zeroclaw peripheral setup-uno-q [--host <ip_or_host>]`
-- `zeroclaw peripheral flash-nucleo`
 
 ### `props` (deprecated)
 

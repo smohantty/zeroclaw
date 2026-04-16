@@ -44,7 +44,6 @@ copy target\x86_64-pc-windows-msvc\release\zeroclaw.exe %USERPROFILE%\.zeroclaw\
 | Git | Yes | [git-scm.com/download/win](https://git-scm.com/download/win) |
 | Rust 1.87+ | Yes | Auto-installed by `setup.bat` if missing |
 | Visual Studio Build Tools | Yes (source builds) | C++ workload required for MSVC linker |
-| Node.js | No | Only needed to build the web dashboard from source |
 
 ### Installing Visual Studio Build Tools
 
@@ -63,22 +62,9 @@ ZeroClaw uses Cargo feature flags to control which integrations are compiled in:
 | Feature | Description | Default? |
 |---------|-------------|----------|
 | `agent-runtime` | Full agent loop, channels, tools, security | Yes |
-| `observability-prometheus` | Prometheus metrics | Yes |
-| `schema-export` | JSON Schema generation for config | Yes |
-| `channel-matrix` | Matrix protocol | No |
-| `channel-lark` | Lark/Feishu messaging | No |
-| `channel-nostr` | Nostr protocol | No |
 | `browser-native` | Headless browser | No |
-| `hardware` | USB device support | No |
 | `rag-pdf` | PDF extraction for RAG | No |
-| `observability-otel` | OpenTelemetry | No |
 | `plugins-wasm` | WASM plugin system | No |
-
-To build with specific features:
-
-```cmd
-cargo build --release --locked --features channel-matrix,channel-lark --target x86_64-pc-windows-msvc
-```
 
 ## Post-Installation
 
@@ -106,7 +92,3 @@ Feishu and Lark are the same platform. Build with the `channel-lark` feature:
 ```cmd
 cargo build --release --locked --features channel-lark --target x86_64-pc-windows-msvc
 ```
-
-### Web dashboard missing
-
-The web dashboard requires Node.js and npm at build time. Install Node.js and rebuild, or use the pre-built binary which includes the dashboard.

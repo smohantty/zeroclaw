@@ -28,9 +28,6 @@ jobs:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
 
-      - name: Ensure web/dist placeholder exists
-        run: mkdir -p web/dist && touch web/dist/.gitkeep
-
       - name: Check formatting
         run: cargo fmt --all -- --check
 
@@ -47,9 +44,6 @@ jobs:
         with:
           toolchain: 1.93.0
       - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
-
-      - name: Ensure web/dist placeholder exists
-        run: mkdir -p web/dist && touch web/dist/.gitkeep
 
       - name: Install mold linker
         run: |
@@ -94,10 +88,6 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y mold
 
-      - name: Ensure web/dist placeholder exists
-        shell: bash
-        run: mkdir -p web/dist && touch web/dist/.gitkeep
-
       - name: Build release
         shell: bash
         run: cargo build --profile ci --locked --target ${{ matrix.target }}
@@ -140,10 +130,7 @@ jobs:
           targets: i686-unknown-linux-gnu
       - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
       - name: Install 32-bit libs
-        run: sudo apt-get update && sudo apt-get install -y gcc-multilib
-      - name: Ensure web/dist placeholder exists
-        run: mkdir -p web/dist && touch web/dist/.gitkeep
-      - name: Cargo check (32-bit, no default features)
+        run: sudo apt-get update && sudo apt-get install -y gcc-multilib      - name: Cargo check (32-bit, no default features)
         run: cargo check --target i686-unknown-linux-gnu --no-default-features
 
   # Composite status check — branch protection only needs to require this

@@ -28,39 +28,10 @@ Built by students and members of the Harvard, MIT, and Sundai.Club communities.
 <p align="center">
   🌐 <strong>Languages:</strong>
   <a href="README.md">🇺🇸 English</a> ·
-  <a href="docs/i18n/zh-CN/README.md">🇨🇳 简体中文</a> ·
-  <a href="docs/i18n/ja/README.md">🇯🇵 日本語</a> ·
-  <a href="docs/i18n/ko/README.md">🇰🇷 한국어</a> ·
-  <a href="docs/i18n/vi/README.md">🇻🇳 Tiếng Việt</a> ·
-  <a href="docs/i18n/tl/README.md">🇵🇭 Tagalog</a> ·
-  <a href="docs/i18n/es/README.md">🇪🇸 Español</a> ·
-  <a href="docs/i18n/pt/README.md">🇧🇷 Português</a> ·
-  <a href="docs/i18n/it/README.md">🇮🇹 Italiano</a> ·
-  <a href="docs/i18n/de/README.md">🇩🇪 Deutsch</a> ·
-  <a href="docs/i18n/fr/README.md">🇫🇷 Français</a> ·
-  <a href="docs/i18n/ar/README.md">🇸🇦 العربية</a> ·
-  <a href="docs/i18n/hi/README.md">🇮🇳 हिन्दी</a> ·
-  <a href="docs/i18n/ru/README.md">🇷🇺 Русский</a> ·
-  <a href="docs/i18n/bn/README.md">🇧🇩 বাংলা</a> ·
-  <a href="docs/i18n/he/README.md">🇮🇱 עברית</a> ·
-  <a href="docs/i18n/pl/README.md">🇵🇱 Polski</a> ·
-  <a href="docs/i18n/cs/README.md">🇨🇿 Čeština</a> ·
-  <a href="docs/i18n/nl/README.md">🇳🇱 Nederlands</a> ·
-  <a href="docs/i18n/tr/README.md">🇹🇷 Türkçe</a> ·
-  <a href="docs/i18n/uk/README.md">🇺🇦 Українська</a> ·
-  <a href="docs/i18n/id/README.md">🇮🇩 Bahasa Indonesia</a> ·
-  <a href="docs/i18n/th/README.md">🇹🇭 ไทย</a> ·
-  <a href="docs/i18n/ur/README.md">🇵🇰 اردو</a> ·
-  <a href="docs/i18n/ro/README.md">🇷🇴 Română</a> ·
-  <a href="docs/i18n/sv/README.md">🇸🇪 Svenska</a> ·
-  <a href="docs/i18n/el/README.md">🇬🇷 Ελληνικά</a> ·
-  <a href="docs/i18n/hu/README.md">🇭🇺 Magyar</a> ·
-  <a href="docs/i18n/fi/README.md">🇫🇮 Suomi</a> ·
-  <a href="docs/i18n/da/README.md">🇩🇰 Dansk</a> ·
-  <a href="docs/i18n/nb/README.md">🇳🇴 Norsk</a>
+  <a href="docs/i18n/ko/README.md">🇰🇷 한국어</a>
 </p>
 
-ZeroClaw is a personal AI assistant you run on your own devices. It answers you on the channels you already use (WhatsApp, Telegram, Slack, Discord, Signal, iMessage, Matrix, IRC, Email, Bluesky, Nostr, Mattermost, Nextcloud Talk, DingTalk, Lark, QQ, Reddit, LinkedIn, Twitter, MQTT, WeChat Work, and more). It has a web dashboard for real-time control and can connect to hardware peripherals (ESP32, STM32, Arduino, Raspberry Pi). The Gateway is just the control plane — the product is the assistant.
+ZeroClaw is a personal AI assistant you run on your own devices. It answers you on the channels you already use (WhatsApp, Telegram, Slack, Discord, Signal, iMessage, Matrix, IRC, Email, Bluesky, Nostr, Mattermost, Nextcloud Talk, DingTalk, Lark, QQ, Reddit, LinkedIn, Twitter, MQTT, WeChat Work, and more). It exposes a lean gateway control plane. The Gateway is just the control plane — the product is the assistant.
 
 If you want a personal, single-user assistant that feels local, fast, and always-on, this is it.
 
@@ -74,15 +45,13 @@ If you want a personal, single-user assistant that feels local, fast, and always
   <a href="https://discord.com/invite/wDshRVqRjx">Discord</a>
 </p>
 
-> **Preferred setup:** run `zeroclaw onboard` in your terminal. ZeroClaw Onboard guides you step by step through setting up the gateway, workspace, channels, and provider. It is the recommended setup path and works on macOS, Linux, and Windows (via WSL2). New install? Start here: [Getting started](#quick-start)
-
 ### Subscription Auth (OAuth)
 
 - **OpenAI Codex** (ChatGPT subscription)
 - **Gemini** (Google OAuth)
 - **Anthropic** (API key or auth token)
 
-Model note: while many providers/models are supported, for the best experience use the strongest latest-generation model available to you. See [Onboarding](#quick-start).
+Model note: while many providers/models are supported, for the best experience use the strongest latest-generation model available to you.
 
 Models config + CLI: [Providers reference](docs/reference/api/providers-reference.md)
 Auth profile rotation (OAuth vs API keys) + failover: [Model failover](docs/reference/api/providers-reference.md)
@@ -105,17 +74,15 @@ cd zeroclaw
 ./install.sh
 ```
 
-`zeroclaw onboard` runs automatically after install to configure your workspace and provider.
-
 ## Quick start (TL;DR)
 
 Full beginner guide (auth, pairing, channels): [Getting started](docs/setup-guides/one-click-bootstrap.md)
 
 ```bash
-# Install + onboard
+# Install
 ./install.sh
 
-# Start the gateway (webhook server + web dashboard)
+# Start the gateway (webhook server + control API)
 zeroclaw gateway                # default: 127.0.0.1:42617
 zeroclaw gateway --port 0       # random port (security hardened)
 
@@ -146,7 +113,7 @@ cd zeroclaw
 cargo build --release --locked
 cargo install --path . --force --locked
 
-zeroclaw onboard
+zeroclaw config init
 ```
 
 > **Dev fallback (no global install):** prefix commands with `cargo run --release --` (example: `cargo run --release -- status`).
@@ -210,19 +177,16 @@ Use this board for important notices (breaking changes, security advisories, mai
 - **Local-first Gateway** — single control plane for sessions, channels, tools, cron, SOPs, and events.
 - **Multi-channel inbox** — WhatsApp, Telegram, Slack, Discord, Signal, iMessage, Matrix, IRC, Email, Bluesky, Nostr, Mattermost, Nextcloud Talk, DingTalk, Lark, QQ, Reddit, LinkedIn, Twitter, MQTT, WeChat Work, WebSocket, and more.
 - **Multi-agent orchestration (Hands)** — autonomous agent swarms that run on schedule and grow smarter over time.
-- **Standard Operating Procedures (SOPs)** — event-driven workflow automation with MQTT, webhook, cron, and peripheral triggers.
-- **Web Dashboard** — React 19 + Vite web UI with real-time chat, memory browser, config editor, cron manager, and tool inspector.
-- **Hardware peripherals** — ESP32, STM32 Nucleo, Arduino, Raspberry Pi GPIO via the `Peripheral` trait.
+- **Standard Operating Procedures (SOPs)** — event-driven workflow automation with MQTT, webhook, and cron triggers.
 - **First-class tools** — shell, file I/O, browser, git, web fetch/search, MCP, Jira, Notion, Google Workspace, and 70+ more.
 - **Lifecycle hooks** — intercept and modify LLM calls, tool executions, and messages at every stage.
 - **Skills platform** — bundled, community, and workspace skills with security auditing.
-- **Tunnel support** — Cloudflare, Tailscale, ngrok, OpenVPN, and custom tunnels for remote access.
 
 ### Why teams pick ZeroClaw
 
 - **Lean by default:** small Rust binary, fast startup, low memory footprint.
 - **Secure by design:** pairing, strict sandboxing, explicit allowlists, workspace scoping.
-- **Fully swappable:** core systems are traits (providers, channels, tools, memory, tunnels).
+- **Fully swappable:** core systems are traits (providers, channels, tools, memory).
 - **No lock-in:** OpenAI-compatible provider support + pluggable custom endpoints.
 
 ## Benchmark Snapshot (ZeroClaw vs OpenClaw, Reproducible)
@@ -257,8 +221,8 @@ ls -lh target/release/zeroclaw
 
 ### Core platform
 
-- Gateway HTTP/WS/SSE control plane with sessions, presence, config, cron, webhooks, web dashboard, and pairing.
-- CLI surface: `gateway`, `agent`, `onboard`, `doctor`, `status`, `service`, `migrate`, `auth`, `cron`, `channel`, `skills`.
+- Gateway HTTP/WS/SSE control plane with sessions, presence, config, cron, webhooks, and pairing.
+- CLI surface: `gateway`, `agent`, `doctor`, `status`, `service`, `migrate`, `auth`, `cron`, `channel`, `skills`.
 - Agent orchestration loop with tool dispatch, prompt construction, message classification, and memory loading.
 - Session model with security policy enforcement, autonomy levels, and approval gating.
 - Resilient provider wrapper with failover, retry, and model routing across 20+ LLM backends.
@@ -269,47 +233,21 @@ Channels: WhatsApp (native), Telegram, Slack, Discord, Signal, iMessage, Matrix,
 
 Feature-gated: Matrix (`channel-matrix`), Lark (`channel-lark`), Nostr (`channel-nostr`).
 
-### Web dashboard
-
-React 19 + Vite 6 + Tailwind CSS 4 web dashboard served directly from the Gateway:
-
-- **Dashboard** — system overview, health status, uptime, cost tracking
-- **Agent Chat** — interactive chat with the agent
-- **Memory** — browse and manage memory entries
-- **Config** — view and edit configuration
-- **Cron** — manage scheduled tasks
-- **Tools** — browse available tools
-- **Logs** — view agent activity logs
-- **Cost** — token usage and cost tracking
-- **Doctor** — system health diagnostics
-- **Integrations** — integration status and setup
-- **Pairing** — device pairing management
-
-### Firmware targets
-
-| Target | Platform | Purpose |
-|--------|----------|---------|
-| ESP32 | Espressif ESP32 | Wireless peripheral agent |
-| ESP32-UI | ESP32 + Display | Agent with visual interface |
-| STM32 Nucleo | STM32 (ARM Cortex-M) | Industrial peripheral |
-| Arduino | Arduino | Basic sensor/actuator bridge |
-| Uno Q Bridge | Arduino Uno | Serial bridge to agent |
-
 ### Tools + automation
 
-- **Core:** shell, file read/write/edit, git operations, glob search, content search
+- **Core:** shell, file read/write/edit, glob search, content search
 - **Web:** browser control, web fetch, web search, screenshot, image info, PDF read
-- **Integrations:** Jira, Notion, Google Workspace, Microsoft 365, LinkedIn, Composio, Pushover, Weather (wttr.in)
+- **Integrations:** Pushover, Weather (wttr.in)
 - **MCP:** Model Context Protocol tool wrapper + deferred tool sets
 - **Scheduling:** cron add/remove/update/run, schedule tool
-- **Memory:** recall, store, forget, knowledge, project intel
+- **Memory:** recall, store, forget, knowledge
 - **Advanced:** delegate (agent-to-agent), swarm, model switch/routing, security ops, cloud ops
 - **Hardware:** board info, memory map, memory read (feature-gated)
 
 ### Runtime + safety
 
 - **Autonomy levels:** ReadOnly, Supervised (default), Full.
-- **Sandboxing:** workspace isolation, path traversal blocking, command allowlists, forbidden paths, Landlock (Linux), Bubblewrap.
+- **Sandboxing:** workspace isolation, path traversal blocking, command allowlists, forbidden paths, Bubblewrap.
 - **Rate limiting:** max actions per hour, max cost per day (configurable).
 - **Approval gating:** interactive approval for medium/high risk operations.
 - **E-stop:** emergency shutdown capability.
@@ -317,8 +255,6 @@ React 19 + Vite 6 + Tailwind CSS 4 web dashboard served directly from the Gatewa
 
 ### Ops + packaging
 
-- Web dashboard served directly from the Gateway.
-- Tunnel support: Cloudflare, Tailscale, ngrok, OpenVPN, custom command.
 - Docker runtime adapter for containerized execution.
 - CI/CD: beta (auto on push) → stable (manual dispatch) → Docker, crates.io, Scoop, AUR, Homebrew, tweet.
 - Pre-built binaries for Linux (x86_64, aarch64, armv7), macOS (x86_64, aarch64), Windows (x86_64).
@@ -374,13 +310,6 @@ password = "..."
 ```toml
 [channels.signal]
 phone_number = "+1234567890"
-```
-
-### Tunnel configuration
-
-```toml
-[tunnel]
-kind = "cloudflare"  # or "tailscale", "ngrok", "openvpn", "custom", "none"
 ```
 
 Details: [Channel reference](docs/reference/api/channels-reference.md) · [Config reference](docs/reference/api/config-reference.md)
@@ -451,7 +380,6 @@ zeroclaw skills remove my-skill
 
 ```bash
 # Workspace management
-zeroclaw onboard              # Guided setup wizard
 zeroclaw status               # Show daemon/agent status
 zeroclaw doctor               # Run system diagnostics
 
@@ -486,11 +414,6 @@ zeroclaw memory stats         # Memory statistics
 zeroclaw auth login --provider <name>
 zeroclaw auth status
 zeroclaw auth use --provider <name> --profile <profile>
-
-# Hardware peripherals
-zeroclaw hardware discover    # Scan for connected devices
-zeroclaw peripheral list      # List connected peripherals
-zeroclaw peripheral flash     # Flash firmware to device
 
 # Migration
 zeroclaw migrate openclaw --dry-run
@@ -602,13 +525,12 @@ Download the latest assets from:
 
 ## Docs
 
-Use these when you're past the onboarding flow and want the deeper reference.
+Use these when you want the deeper reference.
 
 - Start with the [docs index](docs/README.md) for navigation and "what's where."
 - Read the [architecture overview](docs/architecture.md) for the full system model.
 - Use the [configuration reference](docs/reference/api/config-reference.md) when you need every key and example.
 - Run the Gateway by the book with the [operational runbook](docs/ops/operations-runbook.md).
-- Follow [ZeroClaw Onboard](#quick-start) for a guided setup.
 - Debug common failures with the [troubleshooting guide](docs/ops/troubleshooting.md).
 - Review [security guidance](docs/security/README.md) before exposing anything.
 
@@ -634,9 +556,7 @@ Use these when you're past the onboarding flow and want the deeper reference.
 
 ### Deployment + operations
 
-- Network deployment guide: [docs/ops/network-deployment.md](docs/ops/network-deployment.md)
 - Proxy agent playbook: [docs/ops/proxy-agent-playbook.md](docs/ops/proxy-agent-playbook.md)
-- Hardware guides: [docs/hardware/README.md](docs/hardware/README.md)
 
 ## Icy Crab 🦀
 
@@ -674,8 +594,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [CLA.md](docs/contributing/cla.md). I
 - New `Observer` → `src/observability/`
 - New `Tool` → `src/tools/`
 - New `Memory` → `src/memory/`
-- New `Tunnel` → `src/tunnel/`
-- New `Peripheral` → `src/peripherals/`
 - New `Skill` → `~/.zeroclaw/workspace/skills/<name>/`
 
 <!-- BEGIN:RECENT_CONTRIBUTORS -->

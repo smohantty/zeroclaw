@@ -18,10 +18,6 @@ tools already maintain long-lived shared state:
 - **`ChannelMapHandle`** (`src/tools/reaction.rs`):
   `Arc<RwLock<HashMap<String, Arc<dyn Channel>>>>` — global channel map shared
   across all clients.
-- **`CanvasStore`** (`src/tools/canvas.rs`):
-  `Arc<RwLock<HashMap<String, CanvasEntry>>>` — canvas IDs are plain strings
-  with no client namespace.
-
 These patterns emerged organically. As the tool surface grows and more clients
 connect concurrently, we need a clear contract governing ownership, identity,
 isolation, lifecycle, and reload behavior for tool-held shared state. Without
@@ -45,13 +41,12 @@ Additional context:
 established **handle pattern**: wrap the state in `Arc<RwLock<T>>` (or
 `Arc<parking_lot::RwLock<T>>`) and expose a cloneable handle type.
 
-This pattern is already proven by three independent implementations:
+This pattern is already proven by independent implementations:
 
 | Handle | Location | Inner type |
 |--------|----------|-----------|
 | `DelegateParentToolsHandle` | `src/tools/mod.rs` | `Vec<Arc<dyn Tool>>` |
 | `ChannelMapHandle` | `src/tools/reaction.rs` | `HashMap<String, Arc<dyn Channel>>` |
-| `CanvasStore` | `src/tools/canvas.rs` | `HashMap<String, CanvasEntry>` |
 
 Tools that need shared state MUST:
 
@@ -122,13 +117,12 @@ maps by `ClientId`. The handle pattern naturally supports this by using
 
 **MAY be shared across clients (with namespace prefixing):**
 
-- Broadcast/display state: canvas frames (`CanvasStore`), notification channels
-  (`ChannelMapHandle`).
+- Broadcast/display state: notification channels (`ChannelMapHandle`).
 - Read-only reference data: tool registry, static configuration, model
   metadata.
 
-When shared state uses string keys (e.g., canvas IDs, channel names), tools
-SHOULD support optional namespace prefixing (e.g., `{client_id}:{canvas_name}`)
+When shared state uses string keys (e.g., channel names), tools
+SHOULD support optional namespace prefixing
 to allow per-client isolation when needed without mandating it for broadcast
 use cases.
 
@@ -159,9 +153,8 @@ Specific invalidation rules:
 | Workspace directory change | `WorkspaceManager` state; file-path-dependent tool state |
 | Provider config change | Provider-dependent tools re-validate connectivity |
 
-Tools MAY retain non-security shared state (e.g., canvas content, channel
-subscriptions) across config reloads unless the reload explicitly affects that
-state's validity.
+Tools MAY retain non-security shared state (e.g., channel subscriptions) across
+config reloads unless the reload explicitly affects that state's validity.
 
 ## Consequences
 
@@ -178,7 +171,7 @@ state's validity.
 
 ### Negative
 
-- **Migration cost:** Existing tools (`CanvasStore`, `ReactionTool`) may need
+- **Migration cost:** Existing tools (`ReactionTool`) may need
   refactoring to accept `ClientId` and namespace their state.
 - **Complexity:** Tools that were simple singletons now need to consider
   multi-client semantics even if they currently have one client.
@@ -196,7 +189,6 @@ state's validity.
 
 - `src/tools/mod.rs` — `DelegateParentToolsHandle`, `all_tools_with_runtime()`
 - `src/tools/reaction.rs` — `ChannelMapHandle`, `ReactionTool`
-- `src/tools/canvas.rs` — `CanvasStore`, `CanvasEntry`
 - `src/tools/traits.rs` — `Tool` trait
 - `src/gateway/mod.rs` — client IP extraction (`forwarded_client_ip`, `resolve_client_ip`)
 - `src/security/` — `SecurityPolicy`

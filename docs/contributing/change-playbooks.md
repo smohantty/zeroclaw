@@ -23,13 +23,6 @@ For complete code examples of each extension trait, see [extension-examples.md](
 - Validate and sanitize all inputs.
 - Return structured `ToolResult`; avoid panics in runtime path.
 
-## Adding a Peripheral
-
-- Implement `Peripheral` in `src/peripherals/`.
-- Peripherals expose `tools()` — each tool delegates to the hardware (GPIO, sensors, etc.).
-- Register board type in config schema if needed.
-- See `docs/hardware/hardware-peripherals-design.md` for protocol and firmware notes.
-
 ## Security / Runtime / Gateway Changes
 
 - Include threat/risk notes and rollback strategy.
@@ -42,7 +35,7 @@ For complete code examples of each extension trait, see [extension-examples.md](
 - Treat docs navigation as product UX: preserve clear pathing from README -> docs hub -> SUMMARY -> category index.
 - Keep top-level nav concise; avoid duplicative links across adjacent nav blocks.
 - When runtime surfaces change, update related references in `docs/reference/`.
-- Keep multilingual entry-point parity for all supported locales (`en`, `zh-CN`, `ja`, `ru`, `fr`, `vi`) when nav or key wording changes.
+- Keep multilingual entry-point parity for all supported locales (`en`, `ko`) when nav or key wording changes.
 - When shared docs wording changes, sync corresponding localized docs in the same PR (or explicitly document deferral and follow-up PR).
 
 ## Tool Shared State

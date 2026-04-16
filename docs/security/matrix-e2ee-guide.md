@@ -66,7 +66,6 @@ allowed_users = ["*"]
 1. Run channel setup and daemon:
 
 ```bash
-zeroclaw onboard --channels-only
 zeroclaw daemon
 ```
 
@@ -103,7 +102,7 @@ curl -sS -H "Authorization: Bearer $MATRIX_TOKEN" \
 
 - Check that returned `user_id` matches the bot account.
 - If `device_id` is missing, set `channels_config.matrix.device_id` manually.
-- To update the access token without re-running onboard:
+- To update the access token:
   ```bash
   zeroclaw config set channels.matrix.access-token
   ```
@@ -239,20 +238,6 @@ A recovery key lets ZeroClaw automatically restore room keys and cross-signing s
 
 #### Step 2: Add the recovery key to ZeroClaw
 
-Option A — during onboarding:
-
-```bash
-zeroclaw onboard
-# or
-zeroclaw onboard --channels-only
-```
-
-When configuring the Matrix channel, the wizard prompts:
-
-```
-E2EE recovery key (or Enter to skip): EsTj 3yST y93F SLpB jJsz ...
-```
-
 Paste the recovery key (input is masked). It will be encrypted and stored in `config.toml` as `channels_config.matrix.recovery_key`.
 
 Option B — via the secret CLI (recommended for existing installs):
@@ -320,6 +305,4 @@ RUST_LOG=zeroclaw::channels::matrix=debug,matrix_sdk_crypto=debug zeroclaw daemo
 
 - [Channels Reference](../reference/api/channels-reference.md)
 - [Operations log keyword appendix](../reference/api/channels-reference.md#7-operations-appendix-log-keywords-matrix)
-- [Network Deployment](../ops/network-deployment.md)
-- [Agnostic Security](./agnostic-security.md)
 - [Reviewer Playbook](../contributing/reviewer-playbook.md)

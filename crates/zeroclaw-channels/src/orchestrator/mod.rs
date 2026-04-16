@@ -18,56 +18,16 @@
 
 pub mod acp_server;
 pub mod media_pipeline;
-pub mod mqtt;
 
-// Channel types imported directly from source crates (no shim files)
-pub use crate::bluesky::BlueskyChannel;
-pub use crate::clawdtalk::ClawdTalkChannel;
-pub use crate::dingtalk::DingTalkChannel;
-pub use crate::discord::DiscordChannel;
-pub use crate::discord_history::DiscordHistoryChannel;
-#[cfg(feature = "channel-email")]
-pub use crate::email_channel::EmailChannel;
-#[cfg(feature = "channel-email")]
-pub use crate::gmail_push::GmailPushChannel;
-pub use crate::imessage::IMessageChannel;
-pub use crate::irc::IrcChannel;
-#[cfg(feature = "channel-lark")]
-pub use crate::lark::LarkChannel;
-#[cfg(feature = "channel-line")]
-pub use crate::line::LineChannel;
-pub use crate::linq::LinqChannel;
-pub use crate::mattermost::MattermostChannel;
-pub use crate::mochat::MochatChannel;
-pub use crate::nextcloud_talk::NextcloudTalkChannel;
-#[cfg(feature = "channel-nostr")]
-pub use crate::nostr::NostrChannel;
-pub use crate::notion::NotionChannel;
-pub use crate::qq::QQChannel;
-pub use crate::reddit::RedditChannel;
-pub use crate::signal::SignalChannel;
-pub use crate::slack::SlackChannel;
 pub use crate::transcription;
 pub use crate::tts::{TtsManager, TtsProvider};
-pub use crate::twitter::TwitterChannel;
-#[cfg(feature = "channel-voice-call")]
-pub use crate::voice_call::VoiceCallChannel;
-#[cfg(feature = "voice-wake")]
-pub use crate::voice_wake::VoiceWakeChannel;
-pub use crate::wati::WatiChannel;
-pub use crate::webhook::WebhookChannel;
-pub use crate::wecom::WeComChannel;
-pub use crate::whatsapp::WhatsAppChannel;
-pub use zeroclaw_api::channel::{Channel, ChannelMessage, SendMessage};
-// Local channel types (in misc, not zeroclaw-channels)
+// Kept channel types imported directly from source crates.
 pub use crate::cli::CliChannel;
 pub use crate::link_enricher;
-#[cfg(feature = "channel-matrix")]
-pub use crate::matrix::MatrixChannel;
 #[cfg(feature = "channel-telegram")]
 pub use crate::telegram::TelegramChannel;
-#[cfg(feature = "whatsapp-web")]
-pub use crate::whatsapp_web::WhatsAppWebChannel;
+pub use crate::webhook::WebhookChannel;
+pub use zeroclaw_api::channel::{Channel, ChannelMessage, SendMessage};
 pub use zeroclaw_infra::debounce::MessageDebouncer;
 pub use zeroclaw_infra::session_backend::SessionBackend;
 pub use zeroclaw_infra::session_sqlite::SqliteSessionBackend;
@@ -297,23 +257,14 @@ const OPENRC_STATUS_ARGS: [&str; 2] = ["zeroclaw", "status"];
 const OPENRC_RESTART_ARGS: [&str; 2] = ["zeroclaw", "restart"];
 
 #[derive(Clone, Copy)]
-#[allow(clippy::struct_excessive_bools)]
 struct InterruptOnNewMessageConfig {
     telegram: bool,
-    slack: bool,
-    discord: bool,
-    mattermost: bool,
-    matrix: bool,
 }
 
 impl InterruptOnNewMessageConfig {
     fn enabled_for_channel(self, channel: &str) -> bool {
         match channel {
             "telegram" => self.telegram,
-            "slack" => self.slack,
-            "discord" => self.discord,
-            "mattermost" => self.mattermost,
-            "matrix" => self.matrix,
             _ => false,
         }
     }
@@ -419,8 +370,8 @@ fn conversation_memory_key(msg: &zeroclaw_api::channel::ChannelMessage) -> Strin
 }
 
 pub fn conversation_history_key(msg: &zeroclaw_api::channel::ChannelMessage) -> String {
-    // Include reply_target for per-channel isolation (e.g. distinct Discord/Slack
-    // channels) and thread_ts for per-topic isolation in forum groups.
+    // Include reply_target for per-channel isolation and thread_ts for per-topic
+    // isolation in forum groups.
     match &msg.thread_ts {
         Some(tid) => format!(
             "{}_{}_{}_{}",
@@ -574,16 +525,6 @@ pub(crate) fn strip_tool_call_tags(message: &str) -> String {
 
 fn channel_delivery_instructions(channel_name: &str) -> Option<&'static str> {
     match channel_name {
-        "matrix" => Some(
-            "When responding on Matrix:\n\
-             - Use Markdown formatting (bold, italic, code blocks)\n\
-             - Be concise and direct\n\
-             - For media attachments use markers: [IMAGE:<absolute-path>], [DOCUMENT:<absolute-path>], [VIDEO:<absolute-path>], [AUDIO:<absolute-path>], or [VOICE:<absolute-path>]\n\
-             - Paths inside markers MUST be absolute (starting with /). Never use relative paths.\n\
-             - Keep normal text outside markers and never wrap markers in code fences.\n\
-             - When you receive a [Voice message], the user spoke to you. Respond naturally as in conversation.\n\
-             - Your text reply will automatically be converted to audio and sent back as a voice message.\n",
-        ),
         "telegram" => Some(
             "When responding on Telegram:\n\
              - Include media markers for files or URLs that should be sent as attachments\n\
@@ -597,15 +538,6 @@ fn channel_delivery_instructions(channel_name: &str) -> Option<&'static str> {
              - For media attachments use markers: [IMAGE:<path-or-url>], [DOCUMENT:<path-or-url>], [VIDEO:<path-or-url>], [AUDIO:<path-or-url>], or [VOICE:<path-or-url>]\n\
              - Keep normal text outside markers and never wrap markers in code fences.\n\
              - Use tool results silently: answer the latest user message directly, and do not narrate delayed/internal tool execution bookkeeping.",
-        ),
-        "qq" => Some(
-            "When responding on QQ:\n\
-             - Use Markdown formatting\n\
-             - Be concise and direct\n\
-             - For media attachments use markers: [IMAGE:<path-or-url>], [DOCUMENT:<path-or-url>], \
-               [VIDEO:<path-or-url>], [VOICE:<path-or-url>]\n\
-             - Voice supports .wav, .mp3, .silk formats only. Other audio formats use [DOCUMENT:]\n\
-             - Keep normal text outside markers and never wrap markers in code fences.\n",
         ),
         _ => None,
     }
@@ -742,7 +674,7 @@ fn strip_tool_summary_prefix(text: &str) -> String {
 }
 
 fn supports_runtime_model_switch(channel_name: &str) -> bool {
-    matches!(channel_name, "telegram" | "discord" | "matrix" | "slack")
+    matches!(channel_name, "telegram")
 }
 
 fn parse_runtime_command(channel_name: &str, content: &str) -> Option<ChannelRuntimeCommand> {
@@ -813,7 +745,7 @@ fn resolved_default_provider(config: &Config) -> String {
         .providers
         .fallback
         .clone()
-        .unwrap_or_else(|| "openrouter".to_string())
+        .unwrap_or_else(|| "openai".to_string())
 }
 
 fn resolved_default_model(config: &Config) -> String {
@@ -1543,8 +1475,8 @@ fn build_models_help_response(
     if cached_models.is_empty() {
         let _ = writeln!(
             response,
-            "\nNo cached model list found for `{}`. Ask the operator to run `zeroclaw models refresh --provider {}`.",
-            current.provider, current.provider
+            "\nNo cached model list found for `{}`.",
+            current.provider
         );
     } else {
         let _ = writeln!(
@@ -1585,7 +1517,7 @@ fn build_providers_help_response(current: &ChannelRouteSelection) -> String {
     response
 }
 
-/// Build a plain-text `/config` response for non-Slack channels.
+/// Build a plain-text `/config` response for runtime channels.
 fn build_config_text_response(
     current: &ChannelRouteSelection,
     _workspace_dir: &Path,
@@ -1615,134 +1547,6 @@ fn build_config_text_response(
         "\nUse `/models <provider>` to switch provider.\nUse `/model <model-id>` to switch model.",
     );
     resp
-}
-
-/// Build a Slack Block Kit JSON payload for the `/config` interactive UI.
-fn build_config_block_kit(
-    current: &ChannelRouteSelection,
-    workspace_dir: &Path,
-    model_routes: &[zeroclaw_config::schema::ModelRouteConfig],
-) -> String {
-    let provider_options: Vec<serde_json::Value> = zeroclaw_providers::list_providers()
-        .iter()
-        .map(|p| {
-            serde_json::json!({
-                "text": { "type": "plain_text", "text": p.display_name },
-                "value": p.name
-            })
-        })
-        .collect();
-
-    // Build model options from model_routes + cached models.
-    let mut model_options: Vec<serde_json::Value> = model_routes
-        .iter()
-        .map(|r| {
-            let label = if r.hint.is_empty() {
-                r.model.clone()
-            } else {
-                format!("{} ({})", r.model, r.hint)
-            };
-            serde_json::json!({
-                "text": { "type": "plain_text", "text": label },
-                "value": r.model
-            })
-        })
-        .collect();
-
-    let cached = load_cached_model_preview(workspace_dir, &current.provider);
-    for model_id in cached {
-        if !model_options.iter().any(|o| {
-            o.get("value")
-                .and_then(|v| v.as_str())
-                .is_some_and(|v| v == model_id)
-        }) {
-            model_options.push(serde_json::json!({
-                "text": { "type": "plain_text", "text": model_id },
-                "value": model_id
-            }));
-        }
-    }
-
-    // If the current model is not in the list, prepend it.
-    if !model_options.iter().any(|o| {
-        o.get("value")
-            .and_then(|v| v.as_str())
-            .is_some_and(|v| v == current.model)
-    }) {
-        model_options.insert(
-            0,
-            serde_json::json!({
-                "text": { "type": "plain_text", "text": &current.model },
-                "value": &current.model
-            }),
-        );
-    }
-
-    // Find initial options matching current selection.
-    let initial_provider = provider_options
-        .iter()
-        .find(|o| {
-            o.get("value")
-                .and_then(|v| v.as_str())
-                .is_some_and(|v| v == current.provider)
-        })
-        .cloned();
-
-    let initial_model = model_options
-        .iter()
-        .find(|o| {
-            o.get("value")
-                .and_then(|v| v.as_str())
-                .is_some_and(|v| v == current.model)
-        })
-        .cloned();
-
-    let mut provider_select = serde_json::json!({
-        "type": "static_select",
-        "action_id": "zeroclaw_config_provider",
-        "placeholder": { "type": "plain_text", "text": "Select provider" },
-        "options": provider_options
-    });
-    if let Some(init) = initial_provider {
-        provider_select["initial_option"] = init;
-    }
-
-    let mut model_select = serde_json::json!({
-        "type": "static_select",
-        "action_id": "zeroclaw_config_model",
-        "placeholder": { "type": "plain_text", "text": "Select model" },
-        "options": model_options
-    });
-    if let Some(init) = initial_model {
-        model_select["initial_option"] = init;
-    }
-
-    let blocks = serde_json::json!([
-        {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": format!(
-                    "*Model Configuration*\nCurrent: `{}` / `{}`",
-                    current.provider, current.model
-                )
-            }
-        },
-        {
-            "type": "section",
-            "block_id": "config_provider_block",
-            "text": { "type": "mrkdwn", "text": "*Provider*" },
-            "accessory": provider_select
-        },
-        {
-            "type": "section",
-            "block_id": "config_model_block",
-            "text": { "type": "mrkdwn", "text": "*Model*" },
-            "accessory": model_select
-        }
-    ]);
-
-    blocks.to_string()
 }
 
 async fn handle_runtime_command_if_needed(
@@ -1818,17 +1622,7 @@ async fn handle_runtime_command_if_needed(
             }
         }
         ChannelRuntimeCommand::ShowConfig => {
-            if msg.channel == "slack" {
-                let blocks_json = build_config_block_kit(
-                    &current,
-                    ctx.workspace_dir.as_path(),
-                    &ctx.model_routes,
-                );
-                // Use a magic prefix so SlackChannel::send() can detect Block Kit JSON.
-                format!("__ZEROCLAW_BLOCK_KIT__{blocks_json}")
-            } else {
-                build_config_text_response(&current, ctx.workspace_dir.as_path(), &ctx.model_routes)
-            }
+            build_config_text_response(&current, ctx.workspace_dir.as_path(), &ctx.model_routes)
         }
         ChannelRuntimeCommand::NewSession => {
             clear_sender_history(ctx, &sender_key);
@@ -3758,9 +3552,7 @@ pub async fn bind_telegram_identity(config: &Config, identity: &str) -> Result<(
 
     let mut updated = config.clone();
     let Some(telegram) = updated.channels.telegram.as_mut() else {
-        anyhow::bail!(
-            "Telegram channel is not configured. Run `zeroclaw onboard --channels-only` first"
-        );
+        anyhow::bail!("Telegram channel is not configured");
     };
 
     if telegram.allowed_users.iter().any(|u| u == "*") {
@@ -3899,6 +3691,7 @@ fn maybe_restart_managed_daemon_service() -> Result<bool> {
 /// Build a single channel instance by config section name (e.g. "telegram").
 fn build_channel_by_id(config: &Config, channel_id: &str) -> Result<Arc<dyn Channel>> {
     match channel_id {
+        "cli" => Ok(Arc::new(CliChannel::new())),
         #[cfg(feature = "channel-telegram")]
         "telegram" => {
             let tg = config
@@ -3920,366 +3713,7 @@ fn build_channel_by_id(config: &Config, channel_id: &str) -> Result<Arc<dyn Chan
                 .with_workspace_dir(config.workspace_dir.clone()),
             ))
         }
-        "discord" => {
-            let dc = config
-                .channels
-                .discord
-                .as_ref()
-                .context("Discord channel is not configured")?;
-            Ok(Arc::new(
-                DiscordChannel::new(
-                    dc.bot_token.clone(),
-                    dc.guild_id.clone(),
-                    dc.allowed_users.clone(),
-                    dc.listen_to_bots,
-                    dc.mention_only,
-                )
-                .with_streaming(
-                    dc.stream_mode,
-                    dc.draft_update_interval_ms,
-                    dc.multi_message_delay_ms,
-                )
-                .with_transcription(config.transcription.clone())
-                .with_stall_timeout(dc.stall_timeout_secs),
-            ))
-        }
-        "slack" => {
-            let sl = config
-                .channels
-                .slack
-                .as_ref()
-                .context("Slack channel is not configured")?;
-            Ok(Arc::new(
-                SlackChannel::new(
-                    sl.bot_token.clone(),
-                    sl.app_token.clone(),
-                    sl.channel_ids.clone(),
-                    sl.allowed_users.clone(),
-                )
-                .with_workspace_dir(config.workspace_dir.clone())
-                .with_markdown_blocks(sl.use_markdown_blocks)
-                .with_transcription(config.transcription.clone())
-                .with_streaming(sl.stream_drafts, sl.draft_update_interval_ms)
-                .with_cancel_reaction(sl.cancel_reaction.clone()),
-            ))
-        }
-        "mattermost" => {
-            let mm = config
-                .channels
-                .mattermost
-                .as_ref()
-                .context("Mattermost channel is not configured")?;
-            Ok(Arc::new(MattermostChannel::new(
-                mm.url.clone(),
-                mm.bot_token.clone(),
-                mm.channel_id.clone(),
-                mm.allowed_users.clone(),
-                mm.thread_replies.unwrap_or(true),
-                mm.mention_only.unwrap_or(false),
-            )))
-        }
-        "signal" => {
-            let sg = config
-                .channels
-                .signal
-                .as_ref()
-                .context("Signal channel is not configured")?;
-            Ok(Arc::new(SignalChannel::new(
-                sg.http_url.clone(),
-                sg.account.clone(),
-                sg.group_id.clone(),
-                sg.allowed_from.clone(),
-                sg.ignore_attachments,
-                sg.ignore_stories,
-            )))
-        }
-        "matrix" => {
-            #[cfg(feature = "channel-matrix")]
-            {
-                let mx = config
-                    .channels
-                    .matrix
-                    .as_ref()
-                    .context("Matrix channel is not configured")?;
-                Ok(Arc::new(MatrixChannel::new(
-                    mx.homeserver.clone(),
-                    mx.access_token.clone(),
-                    // "" sentinel = no specific room (join logic handles "allow all")
-                    mx.allowed_rooms.first().cloned().unwrap_or_default(),
-                    mx.allowed_users.clone(),
-                    mx.mention_only,
-                )))
-            }
-            #[cfg(not(feature = "channel-matrix"))]
-            {
-                anyhow::bail!("Matrix channel requires the `channel-matrix` feature");
-            }
-        }
-        "whatsapp" | "whatsapp-web" | "whatsapp_web" => {
-            #[cfg(feature = "whatsapp-web")]
-            {
-                let wa = config
-                    .channels
-                    .whatsapp
-                    .as_ref()
-                    .context("WhatsApp channel is not configured")?;
-                if !wa.is_web_config() {
-                    anyhow::bail!(
-                        "WhatsApp channel send requires Web mode (session_path must be set)"
-                    );
-                }
-                Ok(Arc::new(WhatsAppWebChannel::new(
-                    wa.session_path.clone().unwrap_or_default(),
-                    wa.pair_phone.clone(),
-                    wa.pair_code.clone(),
-                    wa.allowed_numbers.clone(),
-                    wa.mention_only,
-                    wa.mode.clone(),
-                    wa.dm_policy.clone(),
-                    wa.group_policy.clone(),
-                    wa.self_chat_mode,
-                )))
-            }
-            #[cfg(not(feature = "whatsapp-web"))]
-            {
-                anyhow::bail!("WhatsApp channel requires the `whatsapp-web` feature");
-            }
-        }
-        "qq" => {
-            let qq = config
-                .channels
-                .qq
-                .as_ref()
-                .context("QQ channel is not configured")?;
-            Ok(Arc::new(QQChannel::new(
-                qq.app_id.clone(),
-                qq.app_secret.clone(),
-                qq.allowed_users.clone(),
-            )))
-        }
-        "lark" => {
-            #[cfg(feature = "channel-lark")]
-            {
-                let lk = config
-                    .channels
-                    .lark
-                    .as_ref()
-                    .context("Lark channel is not configured")?;
-                Ok(Arc::new(LarkChannel::from_lark_config(lk)))
-            }
-            #[cfg(not(feature = "channel-lark"))]
-            {
-                anyhow::bail!("Lark channel requires the `channel-lark` feature");
-            }
-        }
-        "feishu" => {
-            #[cfg(feature = "channel-lark")]
-            {
-                if let Some(ref fs) = config.channels.feishu {
-                    return Ok(Arc::new(LarkChannel::from_feishu_config(fs)));
-                }
-                // Legacy: [channels_config.lark] with use_feishu = true
-                let lk = config
-                    .channels
-                    .lark
-                    .as_ref()
-                    .context("Feishu channel is not configured")?;
-                Ok(Arc::new(LarkChannel::from_config(lk)))
-            }
-            #[cfg(not(feature = "channel-lark"))]
-            {
-                anyhow::bail!("Feishu channel requires the `channel-lark` feature");
-            }
-        }
-        "dingtalk" => {
-            let dt = config
-                .channels
-                .dingtalk
-                .as_ref()
-                .context("DingTalk channel is not configured")?;
-            Ok(Arc::new(
-                DingTalkChannel::new(
-                    dt.client_id.clone(),
-                    dt.client_secret.clone(),
-                    dt.allowed_users.clone(),
-                )
-                .with_proxy_url(dt.proxy_url.clone()),
-            ))
-        }
-        "wecom" => {
-            let wc = config
-                .channels
-                .wecom
-                .as_ref()
-                .context("WeCom channel is not configured")?;
-            Ok(Arc::new(WeComChannel::new(
-                wc.webhook_key.clone(),
-                wc.allowed_users.clone(),
-            )))
-        }
-        "nextcloud_talk" | "nextcloud-talk" => {
-            let nc = config
-                .channels
-                .nextcloud_talk
-                .as_ref()
-                .context("Nextcloud Talk channel is not configured")?;
-            Ok(Arc::new(NextcloudTalkChannel::new_with_proxy(
-                nc.base_url.clone(),
-                nc.app_token.clone(),
-                nc.bot_name.clone().unwrap_or_default(),
-                nc.allowed_users.clone(),
-                nc.proxy_url.clone(),
-            )))
-        }
-        "wati" => {
-            let wati_cfg = config
-                .channels
-                .wati
-                .as_ref()
-                .context("WATI channel is not configured")?;
-            Ok(Arc::new(WatiChannel::new_with_proxy(
-                wati_cfg.api_token.clone(),
-                wati_cfg.api_url.clone(),
-                wati_cfg.tenant_id.clone(),
-                wati_cfg.allowed_numbers.clone(),
-                wati_cfg.proxy_url.clone(),
-            )))
-        }
-        "linq" => {
-            let lq = config
-                .channels
-                .linq
-                .as_ref()
-                .context("Linq channel is not configured")?;
-            Ok(Arc::new(LinqChannel::new(
-                lq.api_token.clone(),
-                lq.from_phone.clone(),
-                lq.allowed_senders.clone(),
-            )))
-        }
-        #[cfg(feature = "channel-email")]
-        "email" => {
-            let em = config
-                .channels
-                .email
-                .as_ref()
-                .context("Email channel is not configured")?;
-            Ok(Arc::new(EmailChannel::new(em.clone())))
-        }
-        #[cfg(feature = "channel-email")]
-        "gmail_push" | "gmail-push" => {
-            let gp = config
-                .channels
-                .gmail_push
-                .as_ref()
-                .context("Gmail Push channel is not configured")?;
-            Ok(Arc::new(GmailPushChannel::new(gp.clone())))
-        }
-        "irc" => {
-            let irc_cfg = config
-                .channels
-                .irc
-                .as_ref()
-                .context("IRC channel is not configured")?;
-            Ok(Arc::new(IrcChannel::new(crate::irc::IrcChannelConfig {
-                server: irc_cfg.server.clone(),
-                port: irc_cfg.port,
-                nickname: irc_cfg.nickname.clone(),
-                username: irc_cfg.username.clone(),
-                channels: irc_cfg.channels.clone(),
-                allowed_users: irc_cfg.allowed_users.clone(),
-                server_password: irc_cfg.server_password.clone(),
-                nickserv_password: irc_cfg.nickserv_password.clone(),
-                sasl_password: irc_cfg.sasl_password.clone(),
-                verify_tls: irc_cfg.verify_tls.unwrap_or(true),
-            })))
-        }
-        "twitter" => {
-            let tw = config
-                .channels
-                .twitter
-                .as_ref()
-                .context("X/Twitter channel is not configured")?;
-            Ok(Arc::new(TwitterChannel::new(
-                tw.bearer_token.clone(),
-                tw.allowed_users.clone(),
-            )))
-        }
-        "mochat" => {
-            let mc = config
-                .channels
-                .mochat
-                .as_ref()
-                .context("Mochat channel is not configured")?;
-            Ok(Arc::new(MochatChannel::new(
-                mc.api_url.clone(),
-                mc.api_token.clone(),
-                mc.allowed_users.clone(),
-                mc.poll_interval_secs,
-            )))
-        }
-        "discord_history" | "discord-history" => {
-            let dh = config
-                .channels
-                .discord_history
-                .as_ref()
-                .context("Discord History channel is not configured")?;
-            let discord_mem =
-                zeroclaw_memory::SqliteMemory::new_named(&config.workspace_dir, "discord")
-                    .context("Discord History: failed to open discord.db")?;
-            Ok(Arc::new(DiscordHistoryChannel::new(
-                dh.bot_token.clone(),
-                dh.guild_id.clone(),
-                dh.allowed_users.clone(),
-                dh.channel_ids.clone(),
-                Arc::new(discord_mem),
-                dh.store_dms,
-                dh.respond_to_dms,
-            )))
-        }
-        "imessage" => {
-            let im = config
-                .channels
-                .imessage
-                .as_ref()
-                .context("iMessage channel is not configured")?;
-            Ok(Arc::new(IMessageChannel::new(im.allowed_contacts.clone())))
-        }
-        "line" => {
-            #[cfg(feature = "channel-line")]
-            {
-                let ln = config
-                    .channels
-                    .line
-                    .as_ref()
-                    .context("LINE channel is not configured")?;
-                Ok(Arc::new(LineChannel::from_config(ln)))
-            }
-            #[cfg(not(feature = "channel-line"))]
-            {
-                anyhow::bail!("LINE channel requires the `channel-line` feature");
-            }
-        }
-        "voice-call" => {
-            #[cfg(feature = "channel-voice-call")]
-            {
-                let vc = config
-                    .channels
-                    .voice_call
-                    .as_ref()
-                    .context("Voice Call channel is not configured")?;
-                Ok(Arc::new(VoiceCallChannel::new(vc.clone())))
-            }
-            #[cfg(not(feature = "channel-voice-call"))]
-            {
-                anyhow::bail!("Voice Call channel requires the `channel-voice-call` feature");
-            }
-        }
-        other => anyhow::bail!(
-            "Unknown channel '{other}'. Supported: telegram, discord, slack, mattermost, signal, \
-            matrix, whatsapp, qq, lark, feishu, dingtalk, wecom, nextcloud_talk, wati, linq, \
-            email, gmail_push, irc, twitter, mochat, discord_history, imessage, line, voice-call"
-        ),
+        other => anyhow::bail!("Unknown channel '{other}'. Supported: cli, telegram"),
     }
 }
 
@@ -4324,9 +3758,8 @@ struct ConfiguredChannel {
 
 fn collect_configured_channels(
     config: &Config,
-    matrix_skip_context: &str,
+    _matrix_skip_context: &str,
 ) -> Vec<ConfiguredChannel> {
-    let _ = matrix_skip_context;
     let mut channels = Vec::new();
 
     #[cfg(feature = "channel-telegram")]
@@ -4354,594 +3787,7 @@ fn collect_configured_channels(
         }
     }
 
-    if let Some(ref dc) = config.channels.discord {
-        if dc.enabled {
-            channels.push(ConfiguredChannel {
-                display_name: "Discord",
-                channel: Arc::new(
-                    DiscordChannel::new(
-                        dc.bot_token.clone(),
-                        dc.guild_id.clone(),
-                        dc.allowed_users.clone(),
-                        dc.listen_to_bots,
-                        dc.mention_only,
-                    )
-                    .with_streaming(
-                        dc.stream_mode,
-                        dc.draft_update_interval_ms,
-                        dc.multi_message_delay_ms,
-                    )
-                    .with_proxy_url(dc.proxy_url.clone())
-                    .with_transcription(config.transcription.clone())
-                    .with_stall_timeout(dc.stall_timeout_secs),
-                ),
-            });
-        } else {
-            tracing::info!("Discord channel configured but disabled (enabled = false)");
-        }
-    }
-
-    if let Some(ref dh) = config.channels.discord_history {
-        if dh.enabled {
-            match zeroclaw_memory::SqliteMemory::new_named(&config.workspace_dir, "discord") {
-                Ok(discord_mem) => {
-                    channels.push(ConfiguredChannel {
-                        display_name: "Discord History",
-                        channel: Arc::new(
-                            DiscordHistoryChannel::new(
-                                dh.bot_token.clone(),
-                                dh.guild_id.clone(),
-                                dh.allowed_users.clone(),
-                                dh.channel_ids.clone(),
-                                Arc::new(discord_mem),
-                                dh.store_dms,
-                                dh.respond_to_dms,
-                            )
-                            .with_proxy_url(dh.proxy_url.clone()),
-                        ),
-                    });
-                }
-                Err(e) => {
-                    tracing::error!("discord_history: failed to open discord.db: {e}");
-                }
-            }
-        } else {
-            tracing::info!("Discord History channel configured but disabled (enabled = false)");
-        }
-    }
-
-    if let Some(ref sl) = config.channels.slack {
-        if sl.enabled {
-            channels.push(ConfiguredChannel {
-                display_name: "Slack",
-                channel: Arc::new(
-                    SlackChannel::new(
-                        sl.bot_token.clone(),
-                        sl.app_token.clone(),
-                        sl.channel_ids.clone(),
-                        sl.allowed_users.clone(),
-                    )
-                    .with_thread_replies(sl.thread_replies.unwrap_or(true))
-                    .with_group_reply_policy(sl.mention_only, Vec::new())
-                    .with_workspace_dir(config.workspace_dir.clone())
-                    .with_markdown_blocks(sl.use_markdown_blocks)
-                    .with_proxy_url(sl.proxy_url.clone())
-                    .with_transcription(config.transcription.clone())
-                    .with_streaming(sl.stream_drafts, sl.draft_update_interval_ms)
-                    .with_cancel_reaction(sl.cancel_reaction.clone()),
-                ),
-            });
-        } else {
-            tracing::info!("Slack channel configured but disabled (enabled = false)");
-        }
-    }
-
-    if let Some(ref mm) = config.channels.mattermost {
-        if mm.enabled {
-            channels.push(ConfiguredChannel {
-                display_name: "Mattermost",
-                channel: Arc::new(
-                    MattermostChannel::new(
-                        mm.url.clone(),
-                        mm.bot_token.clone(),
-                        mm.channel_id.clone(),
-                        mm.allowed_users.clone(),
-                        mm.thread_replies.unwrap_or(true),
-                        mm.mention_only.unwrap_or(false),
-                    )
-                    .with_proxy_url(mm.proxy_url.clone())
-                    .with_transcription(config.transcription.clone()),
-                ),
-            });
-        } else {
-            tracing::info!("Mattermost channel configured but disabled (enabled = false)");
-        }
-    }
-
-    if let Some(ref im) = config.channels.imessage {
-        if im.enabled {
-            channels.push(ConfiguredChannel {
-                display_name: "iMessage",
-                channel: Arc::new(IMessageChannel::new(im.allowed_contacts.clone())),
-            });
-        } else {
-            tracing::info!("iMessage channel configured but disabled (enabled = false)");
-        }
-    }
-
-    #[cfg(feature = "channel-matrix")]
-    if let Some(ref mx) = config.channels.matrix {
-        if mx.enabled {
-            channels.push(ConfiguredChannel {
-                display_name: "Matrix",
-                channel: Arc::new(
-                    MatrixChannel::new_full(
-                        mx.homeserver.clone(),
-                        mx.access_token.clone(),
-                        // "" sentinel = no specific room (join logic handles "allow all")
-                        mx.allowed_rooms.first().cloned().unwrap_or_default(),
-                        mx.allowed_users.clone(),
-                        mx.allowed_rooms.clone(),
-                        mx.user_id.clone(),
-                        mx.device_id.clone(),
-                        config.config_path.parent().map(|path| path.to_path_buf()),
-                        mx.recovery_key.clone(),
-                        mx.mention_only,
-                    )
-                    .with_streaming(
-                        mx.stream_mode,
-                        mx.draft_update_interval_ms,
-                        mx.multi_message_delay_ms,
-                    )
-                    .with_transcription(config.transcription.clone()),
-                ),
-            });
-        } else {
-            tracing::info!("Matrix channel configured but disabled (enabled = false)");
-        }
-    }
-
-    #[cfg(not(feature = "channel-matrix"))]
-    if config.channels.matrix.is_some() {
-        tracing::warn!(
-            "Matrix channel is configured but this build was compiled without `channel-matrix`; skipping Matrix {}.",
-            matrix_skip_context
-        );
-    }
-
-    if let Some(ref sig) = config.channels.signal {
-        if sig.enabled {
-            channels.push(ConfiguredChannel {
-                display_name: "Signal",
-                channel: Arc::new(
-                    SignalChannel::new(
-                        sig.http_url.clone(),
-                        sig.account.clone(),
-                        sig.group_id.clone(),
-                        sig.allowed_from.clone(),
-                        sig.ignore_attachments,
-                        sig.ignore_stories,
-                    )
-                    .with_proxy_url(sig.proxy_url.clone()),
-                ),
-            });
-        } else {
-            tracing::info!("Signal channel configured but disabled (enabled = false)");
-        }
-    }
-
-    if let Some(ref wa) = config.channels.whatsapp {
-        if wa.enabled {
-            if wa.is_ambiguous_config() {
-                tracing::warn!(
-                    "WhatsApp config has both phone_number_id and session_path set; preferring Cloud API mode. Remove one selector to avoid ambiguity."
-                );
-            }
-            // Runtime negotiation: detect backend type from config
-            match wa.backend_type() {
-                "cloud" => {
-                    // Cloud API mode: requires phone_number_id, access_token, verify_token
-                    if wa.is_cloud_config() {
-                        channels.push(ConfiguredChannel {
-                            display_name: "WhatsApp",
-                            channel: Arc::new(
-                                WhatsAppChannel::new(
-                                    wa.access_token.clone().unwrap_or_default(),
-                                    wa.phone_number_id.clone().unwrap_or_default(),
-                                    wa.verify_token.clone().unwrap_or_default(),
-                                    wa.allowed_numbers.clone(),
-                                )
-                                .with_proxy_url(wa.proxy_url.clone())
-                                .with_dm_mention_patterns(wa.dm_mention_patterns.clone())
-                                .with_group_mention_patterns(wa.group_mention_patterns.clone()),
-                            ),
-                        });
-                    } else {
-                        tracing::warn!(
-                            "WhatsApp Cloud API configured but missing required fields (phone_number_id, access_token, verify_token)"
-                        );
-                    }
-                }
-                "web" => {
-                    // Web mode: requires session_path
-                    #[cfg(feature = "whatsapp-web")]
-                    if wa.is_web_config() {
-                        channels.push(ConfiguredChannel {
-                            display_name: "WhatsApp",
-                            channel: Arc::new(
-                                WhatsAppWebChannel::new(
-                                    wa.session_path.clone().unwrap_or_default(),
-                                    wa.pair_phone.clone(),
-                                    wa.pair_code.clone(),
-                                    wa.allowed_numbers.clone(),
-                                    wa.mention_only,
-                                    wa.mode.clone(),
-                                    wa.dm_policy.clone(),
-                                    wa.group_policy.clone(),
-                                    wa.self_chat_mode,
-                                )
-                                .with_transcription(config.transcription.clone())
-                                .with_tts(config.tts.clone())
-                                .with_dm_mention_patterns(wa.dm_mention_patterns.clone())
-                                .with_group_mention_patterns(wa.group_mention_patterns.clone()),
-                            ),
-                        });
-                    } else {
-                        tracing::warn!("WhatsApp Web configured but session_path not set");
-                    }
-                    #[cfg(not(feature = "whatsapp-web"))]
-                    {
-                        tracing::warn!(
-                            "WhatsApp Web backend requires 'whatsapp-web' feature. Enable with: cargo build --features whatsapp-web"
-                        );
-                        eprintln!(
-                            "  ⚠ WhatsApp Web is configured but the 'whatsapp-web' feature is not compiled in."
-                        );
-                        eprintln!("    Rebuild with: cargo build --features whatsapp-web");
-                    }
-                }
-                _ => {
-                    tracing::warn!(
-                        "WhatsApp config invalid: neither phone_number_id (Cloud API) nor session_path (Web) is set"
-                    );
-                }
-            }
-        } else {
-            tracing::info!("WhatsApp channel configured but disabled (enabled = false)");
-        }
-    }
-
-    if let Some(ref lq) = config.channels.linq {
-        if lq.enabled {
-            channels.push(ConfiguredChannel {
-                display_name: "Linq",
-                channel: Arc::new(LinqChannel::new(
-                    lq.api_token.clone(),
-                    lq.from_phone.clone(),
-                    lq.allowed_senders.clone(),
-                )),
-            });
-        } else {
-            tracing::info!("Linq channel configured but disabled (enabled = false)");
-        }
-    }
-
-    if let Some(ref wati_cfg) = config.channels.wati {
-        if wati_cfg.enabled {
-            let wati_channel = WatiChannel::new_with_proxy(
-                wati_cfg.api_token.clone(),
-                wati_cfg.api_url.clone(),
-                wati_cfg.tenant_id.clone(),
-                wati_cfg.allowed_numbers.clone(),
-                wati_cfg.proxy_url.clone(),
-            )
-            .with_transcription(config.transcription.clone());
-
-            channels.push(ConfiguredChannel {
-                display_name: "WATI",
-                channel: Arc::new(wati_channel),
-            });
-        } else {
-            tracing::info!("WATI channel configured but disabled (enabled = false)");
-        }
-    }
-
-    if let Some(ref nc) = config.channels.nextcloud_talk {
-        if nc.enabled {
-            channels.push(ConfiguredChannel {
-                display_name: "Nextcloud Talk",
-                channel: Arc::new(NextcloudTalkChannel::new_with_proxy(
-                    nc.base_url.clone(),
-                    nc.app_token.clone(),
-                    nc.bot_name.clone().unwrap_or_default(),
-                    nc.allowed_users.clone(),
-                    nc.proxy_url.clone(),
-                )),
-            });
-        } else {
-            tracing::info!("Nextcloud Talk channel configured but disabled (enabled = false)");
-        }
-    }
-
-    #[cfg(feature = "channel-email")]
-    if let Some(ref email_cfg) = config.channels.email {
-        if email_cfg.enabled {
-            channels.push(ConfiguredChannel {
-                display_name: "Email",
-                channel: Arc::new(EmailChannel::new(email_cfg.clone())),
-            });
-        } else {
-            tracing::info!("Email channel configured but disabled (enabled = false)");
-        }
-    }
-
-    #[cfg(feature = "channel-email")]
-    if let Some(ref gp_cfg) = config.channels.gmail_push
-        && gp_cfg.enabled
-    {
-        channels.push(ConfiguredChannel {
-            display_name: "Gmail Push",
-            channel: Arc::new(GmailPushChannel::new(gp_cfg.clone())),
-        });
-    }
-
-    if let Some(ref irc) = config.channels.irc {
-        if irc.enabled {
-            channels.push(ConfiguredChannel {
-                display_name: "IRC",
-                channel: Arc::new(IrcChannel::new(crate::irc::IrcChannelConfig {
-                    server: irc.server.clone(),
-                    port: irc.port,
-                    nickname: irc.nickname.clone(),
-                    username: irc.username.clone(),
-                    channels: irc.channels.clone(),
-                    allowed_users: irc.allowed_users.clone(),
-                    server_password: irc.server_password.clone(),
-                    nickserv_password: irc.nickserv_password.clone(),
-                    sasl_password: irc.sasl_password.clone(),
-                    verify_tls: irc.verify_tls.unwrap_or(true),
-                })),
-            });
-        } else {
-            tracing::info!("IRC channel configured but disabled (enabled = false)");
-        }
-    }
-
-    #[cfg(feature = "channel-lark")]
-    if let Some(ref lk) = config.channels.lark {
-        if lk.enabled {
-            if lk.use_feishu {
-                if config.channels.feishu.is_some() {
-                    tracing::warn!(
-                        "Both [channels_config.feishu] and legacy [channels_config.lark].use_feishu=true are configured; ignoring legacy Feishu fallback in lark."
-                    );
-                } else {
-                    tracing::warn!(
-                        "Using legacy [channels_config.lark].use_feishu=true compatibility path; prefer [channels_config.feishu]."
-                    );
-                    channels.push(ConfiguredChannel {
-                        display_name: "Feishu",
-                        channel: Arc::new(
-                            LarkChannel::from_config(lk)
-                                .with_transcription(config.transcription.clone()),
-                        ),
-                    });
-                }
-            } else {
-                channels.push(ConfiguredChannel {
-                    display_name: "Lark",
-                    channel: Arc::new(
-                        LarkChannel::from_lark_config(lk)
-                            .with_transcription(config.transcription.clone()),
-                    ),
-                });
-            }
-        } else {
-            tracing::info!("Lark channel configured but disabled (enabled = false)");
-        }
-    }
-
-    #[cfg(feature = "channel-lark")]
-    if let Some(ref fs) = config.channels.feishu {
-        if fs.enabled {
-            channels.push(ConfiguredChannel {
-                display_name: "Feishu",
-                channel: Arc::new(
-                    LarkChannel::from_feishu_config(fs)
-                        .with_transcription(config.transcription.clone()),
-                ),
-            });
-        } else {
-            tracing::info!("Feishu channel configured but disabled (enabled = false)");
-        }
-    }
-
-    #[cfg(not(feature = "channel-lark"))]
-    if config.channels.lark.is_some() || config.channels.feishu.is_some() {
-        tracing::warn!(
-            "Lark/Feishu channel is configured but this build was compiled without `channel-lark`; skipping Lark/Feishu health check."
-        );
-    }
-
-    #[cfg(feature = "channel-line")]
-    if let Some(ref ln) = config.channels.line {
-        if ln.enabled {
-            channels.push(ConfiguredChannel {
-                display_name: "LINE",
-                channel: Arc::new(
-                    LineChannel::from_config(ln).with_transcription(config.transcription.clone()),
-                ),
-            });
-        } else {
-            tracing::info!("LINE channel configured but disabled (enabled = false)");
-        }
-    }
-
-    #[cfg(not(feature = "channel-line"))]
-    if config.channels.line.is_some() {
-        tracing::warn!(
-            "LINE channel is configured but this build was compiled without `channel-line`; skipping LINE health check."
-        );
-    }
-
-    if let Some(ref dt) = config.channels.dingtalk {
-        if dt.enabled {
-            channels.push(ConfiguredChannel {
-                display_name: "DingTalk",
-                channel: Arc::new(
-                    DingTalkChannel::new(
-                        dt.client_id.clone(),
-                        dt.client_secret.clone(),
-                        dt.allowed_users.clone(),
-                    )
-                    .with_proxy_url(dt.proxy_url.clone()),
-                ),
-            });
-        } else {
-            tracing::info!("DingTalk channel configured but disabled (enabled = false)");
-        }
-    }
-
-    if let Some(ref qq) = config.channels.qq {
-        if qq.enabled {
-            channels.push(ConfiguredChannel {
-                display_name: "QQ",
-                channel: Arc::new(
-                    QQChannel::new(
-                        qq.app_id.clone(),
-                        qq.app_secret.clone(),
-                        qq.allowed_users.clone(),
-                    )
-                    .with_workspace_dir(config.workspace_dir.clone())
-                    .with_proxy_url(qq.proxy_url.clone()),
-                ),
-            });
-        } else {
-            tracing::info!("QQ channel configured but disabled (enabled = false)");
-        }
-    }
-
-    if let Some(ref tw) = config.channels.twitter {
-        channels.push(ConfiguredChannel {
-            display_name: "X/Twitter",
-            channel: Arc::new(TwitterChannel::new(
-                tw.bearer_token.clone(),
-                tw.allowed_users.clone(),
-            )),
-        });
-    }
-
-    if let Some(ref mc) = config.channels.mochat {
-        channels.push(ConfiguredChannel {
-            display_name: "Mochat",
-            channel: Arc::new(MochatChannel::new(
-                mc.api_url.clone(),
-                mc.api_token.clone(),
-                mc.allowed_users.clone(),
-                mc.poll_interval_secs,
-            )),
-        });
-    }
-
-    if let Some(ref wc) = config.channels.wecom {
-        if wc.enabled {
-            channels.push(ConfiguredChannel {
-                display_name: "WeCom",
-                channel: Arc::new(WeComChannel::new(
-                    wc.webhook_key.clone(),
-                    wc.allowed_users.clone(),
-                )),
-            });
-        } else {
-            tracing::info!("WeCom channel configured but disabled (enabled = false)");
-        }
-    }
-
-    if let Some(ref ct) = config.channels.clawdtalk {
-        if ct.enabled {
-            channels.push(ConfiguredChannel {
-                display_name: "ClawdTalk",
-                channel: Arc::new(ClawdTalkChannel::new(ct.clone())),
-            });
-        } else {
-            tracing::info!("ClawdTalk channel configured but disabled (enabled = false)");
-        }
-    }
-
-    // Notion database poller channel
-    if config.notion.enabled && !config.notion.database_id.trim().is_empty() {
-        let notion_api_key = if config.notion.api_key.trim().is_empty() {
-            std::env::var("NOTION_API_KEY").unwrap_or_default()
-        } else {
-            config.notion.api_key.trim().to_string()
-        };
-        if notion_api_key.trim().is_empty() {
-            tracing::warn!(
-                "Notion channel enabled but no API key found (set notion.api_key or NOTION_API_KEY env var)"
-            );
-        } else {
-            channels.push(ConfiguredChannel {
-                display_name: "Notion",
-                channel: Arc::new(NotionChannel::new(
-                    notion_api_key,
-                    config.notion.database_id.clone(),
-                    config.notion.poll_interval_secs,
-                    config.notion.status_property.clone(),
-                    config.notion.input_property.clone(),
-                    config.notion.result_property.clone(),
-                    config.notion.max_concurrent,
-                    config.notion.recover_stale,
-                )),
-            });
-        }
-    }
-
-    if let Some(ref rd) = config.channels.reddit {
-        channels.push(ConfiguredChannel {
-            display_name: "Reddit",
-            channel: Arc::new(RedditChannel::new(
-                rd.client_id.clone(),
-                rd.client_secret.clone(),
-                rd.refresh_token.clone(),
-                rd.username.clone(),
-                rd.subreddit.clone(),
-            )),
-        });
-    }
-
-    if let Some(ref bs) = config.channels.bluesky {
-        channels.push(ConfiguredChannel {
-            display_name: "Bluesky",
-            channel: Arc::new(BlueskyChannel::new(
-                bs.handle.clone(),
-                bs.app_password.clone(),
-            )),
-        });
-    }
-
-    #[cfg(feature = "voice-wake")]
-    if let Some(ref vw) = config.channels.voice_wake {
-        channels.push(ConfiguredChannel {
-            display_name: "VoiceWake",
-            channel: Arc::new(VoiceWakeChannel::new(
-                vw.clone(),
-                config.transcription.clone(),
-            )),
-        });
-    }
-
-    #[cfg(feature = "channel-voice-call")]
-    if let Some(ref vc) = config.channels.voice_call {
-        if vc.enabled {
-            channels.push(ConfiguredChannel {
-                display_name: "Voice Call",
-                channel: Arc::new(VoiceCallChannel::new(vc.clone())),
-            });
-        } else {
-            tracing::info!("Voice Call channel configured but disabled (enabled = false)");
-        }
-    }
-
+    #[cfg(feature = "channel-webhook")]
     if let Some(ref wh) = config.channels.webhook {
         if wh.enabled {
             channels.push(ConfiguredChannel {
@@ -4965,21 +3811,10 @@ fn collect_configured_channels(
 
 /// Run health checks for configured channels.
 pub async fn doctor_channels(config: Config) -> Result<()> {
-    #[allow(unused_mut)]
-    let mut channels = collect_configured_channels(&config, "health check");
-
-    #[cfg(feature = "channel-nostr")]
-    if let Some(ref ns) = config.channels.nostr {
-        channels.push(ConfiguredChannel {
-            display_name: "Nostr",
-            channel: Arc::new(
-                NostrChannel::new(&ns.private_key, ns.relays.clone(), &ns.allowed_pubkeys).await?,
-            ),
-        });
-    }
+    let channels = collect_configured_channels(&config, "health check");
 
     if channels.is_empty() {
-        println!("No real-time channels configured. Run `zeroclaw onboard` first.");
+        println!("No real-time channels configured.");
         return Ok(());
     }
 
@@ -5090,14 +3925,6 @@ pub async fn start_channels(config: Config) -> Result<()> {
             .fallback_provider()
             .and_then(|e| e.api_key.as_deref()),
     )?);
-    let (composio_key, composio_entity_id) = if config.composio.enabled {
-        (
-            config.composio.api_key.as_deref(),
-            Some(config.composio.entity_id.as_str()),
-        )
-    } else {
-        (None, None)
-    };
     // Build system prompt from workspace identity files + skills
     let workspace = config.workspace_dir.clone();
     let (
@@ -5112,8 +3939,6 @@ pub async fn start_channels(config: Config) -> Result<()> {
         &security,
         runtime,
         Arc::clone(&mem),
-        composio_key,
-        composio_entity_id,
         &config.browser,
         &config.http_request,
         &config.web_fetch,
@@ -5124,7 +3949,6 @@ pub async fn start_channels(config: Config) -> Result<()> {
             .fallback_provider()
             .and_then(|e| e.api_key.as_deref()),
         &config,
-        None,
     );
 
     // Wire MCP tools into the registry before freezing — non-fatal.
@@ -5254,12 +4078,6 @@ pub async fn start_channels(config: Config) -> Result<()> {
             "Open approved HTTPS URLs in system browser (allowlist-only, no scraping)",
         ));
     }
-    if config.composio.enabled {
-        tool_descs.push((
-            "composio",
-            "Execute actions on 1000+ apps via Composio (Gmail, Notion, GitHub, Slack, etc.). Use action='list' to discover actions, 'list_accounts' to retrieve connected account IDs, 'execute' to run (optionally with connected_account_id), and 'connect' for OAuth.",
-        ));
-    }
     tool_descs.push((
         "schedule",
         "Manage scheduled tasks (create/list/get/cancel/pause/resume). Supports recurring cron and one-shot delays.",
@@ -5328,21 +4146,12 @@ pub async fn start_channels(config: Config) -> Result<()> {
     }
 
     // Collect active channels from a shared builder to keep startup and doctor parity.
-    #[allow(unused_mut)]
-    let mut channels: Vec<Arc<dyn Channel>> =
-        collect_configured_channels(&config, "runtime startup")
-            .into_iter()
-            .map(|configured| configured.channel)
-            .collect();
-
-    #[cfg(feature = "channel-nostr")]
-    if let Some(ref ns) = config.channels.nostr {
-        channels.push(Arc::new(
-            NostrChannel::new(&ns.private_key, ns.relays.clone(), &ns.allowed_pubkeys).await?,
-        ));
-    }
+    let channels: Vec<Arc<dyn Channel>> = collect_configured_channels(&config, "runtime startup")
+        .into_iter()
+        .map(|configured| configured.channel)
+        .collect();
     if channels.is_empty() {
-        println!("No channels configured. Run `zeroclaw onboard` to set up channels.");
+        println!("No channels configured.");
         return Ok(());
     }
 
@@ -5439,26 +4248,6 @@ pub async fn start_channels(config: Config) -> Result<()> {
         .telegram
         .as_ref()
         .is_some_and(|tg| tg.interrupt_on_new_message);
-    let interrupt_on_new_message_slack = config
-        .channels
-        .slack
-        .as_ref()
-        .is_some_and(|sl| sl.interrupt_on_new_message);
-    let interrupt_on_new_message_discord = config
-        .channels
-        .discord
-        .as_ref()
-        .is_some_and(|dc| dc.interrupt_on_new_message);
-    let interrupt_on_new_message_mattermost = config
-        .channels
-        .mattermost
-        .as_ref()
-        .is_some_and(|mm| mm.interrupt_on_new_message);
-    let interrupt_on_new_message_matrix = config
-        .channels
-        .matrix
-        .as_ref()
-        .is_some_and(|mx| mx.interrupt_on_new_message);
 
     let runtime_ctx = Arc::new(ChannelRuntimeContext {
         channels_by_name,
@@ -5494,10 +4283,6 @@ pub async fn start_channels(config: Config) -> Result<()> {
         message_timeout_secs,
         interrupt_on_new_message: InterruptOnNewMessageConfig {
             telegram: interrupt_on_new_message,
-            slack: interrupt_on_new_message_slack,
-            discord: interrupt_on_new_message_discord,
-            mattermost: interrupt_on_new_message_mattermost,
-            matrix: interrupt_on_new_message_matrix,
         },
         multimodal: config.multimodal.clone(),
         media_pipeline: config.media_pipeline.clone(),
@@ -5664,51 +4449,20 @@ pub async fn deliver_announcement(
             zeroclaw_api::channel::Channel::send(&ch, &SendMessage::new(&safe_output, target))
                 .await?;
         }
-        "discord" => {
-            let dc = config
+        #[cfg(feature = "channel-webhook")]
+        "webhook" => {
+            let wh = config
                 .channels
-                .discord
+                .webhook
                 .as_ref()
-                .ok_or_else(|| anyhow::anyhow!("discord channel not configured"))?;
-            let ch = DiscordChannel::new(
-                dc.bot_token.clone(),
-                dc.guild_id.clone(),
-                dc.allowed_users.clone(),
-                dc.listen_to_bots,
-                dc.mention_only,
-            );
-            zeroclaw_api::channel::Channel::send(&ch, &SendMessage::new(&safe_output, target))
-                .await?;
-        }
-        "slack" => {
-            let sl = config
-                .channels
-                .slack
-                .as_ref()
-                .ok_or_else(|| anyhow::anyhow!("slack channel not configured"))?;
-            let ch = SlackChannel::new(
-                sl.bot_token.clone(),
-                sl.app_token.clone(),
-                sl.channel_ids.clone(),
-                sl.allowed_users.clone(),
-            )
-            .with_workspace_dir(config.workspace_dir.clone());
-            zeroclaw_api::channel::Channel::send(&ch, &SendMessage::new(&safe_output, target))
-                .await?;
-        }
-        "signal" => {
-            let sg = config
-                .channels
-                .signal
-                .as_ref()
-                .ok_or_else(|| anyhow::anyhow!("signal channel not configured"))?;
-            let ch = SignalChannel::new(
-                sg.http_url.clone(),
-                sg.account.clone(),
-                sg.group_id.clone(),
-                sg.allowed_from.clone(),
-                sg.ignore_attachments,
-                sg.ignore_stories,
+                .ok_or_else(|| anyhow::anyhow!("webhook channel not configured"))?;
+            let ch = WebhookChannel::new(
+                wh.port,
+                wh.listen_path.clone(),
+                wh.send_url.clone(),
+                wh.send_method.clone(),
+                wh.auth_header.clone(),
+                wh.secret.clone(),
             );
             zeroclaw_api::channel::Channel::send(&ch, &SendMessage::new(&safe_output, target))
                 .await?;
@@ -7322,7 +6076,7 @@ BTC is currently around $65,000 based on latest tool output."#
 
         let mut provider_cache_seed: HashMap<String, Arc<dyn Provider>> = HashMap::new();
         provider_cache_seed.insert("test-provider".to_string(), Arc::clone(&default_provider));
-        provider_cache_seed.insert("openrouter".to_string(), fallback_provider);
+        provider_cache_seed.insert("openai".to_string(), fallback_provider);
 
         let runtime_ctx = Arc::new(ChannelRuntimeContext {
             channels_by_name: Arc::new(channels_by_name),
@@ -7388,7 +6142,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 id: "msg-cmd-1".to_string(),
                 sender: "alice".to_string(),
                 reply_target: "chat-1".to_string(),
-                content: "/models openrouter".to_string(),
+                content: "/models openai".to_string(),
                 channel: "telegram".to_string(),
                 timestamp: 1,
                 thread_ts: None,
@@ -7401,7 +6155,7 @@ BTC is currently around $65,000 based on latest tool output."#
 
         let sent = channel_impl.sent_messages.lock().await;
         assert_eq!(sent.len(), 1);
-        assert!(sent[0].contains("Provider switched to `openrouter`"));
+        assert!(sent[0].contains("Provider switched to `openai`"));
 
         let route_key = "telegram_chat-1_alice";
         let route = runtime_ctx
@@ -7411,7 +6165,7 @@ BTC is currently around $65,000 based on latest tool output."#
             .get(route_key)
             .cloned()
             .expect("route should be stored for sender");
-        assert_eq!(route.provider, "openrouter");
+        assert_eq!(route.provider, "openai");
         assert_eq!(route.model, "default-model");
 
         assert_eq!(default_provider_impl.call_count.load(Ordering::SeqCst), 0);
@@ -7433,14 +6187,14 @@ BTC is currently around $65,000 based on latest tool output."#
 
         let mut provider_cache_seed: HashMap<String, Arc<dyn Provider>> = HashMap::new();
         provider_cache_seed.insert("test-provider".to_string(), Arc::clone(&default_provider));
-        provider_cache_seed.insert("openrouter".to_string(), routed_provider);
+        provider_cache_seed.insert("openai".to_string(), routed_provider);
 
         let route_key = "telegram_chat-1_alice".to_string();
         let mut route_overrides = HashMap::new();
         route_overrides.insert(
             route_key,
             ChannelRouteSelection {
-                provider: "openrouter".to_string(),
+                provider: "openai".to_string(),
                 model: "route-model".to_string(),
                 api_key: None,
             },

@@ -18,23 +18,14 @@
 
 pub mod anthropic;
 pub mod auth;
-pub mod azure_openai;
-pub mod bedrock;
-pub mod claude_code;
 pub mod compatible;
-pub mod copilot;
 pub mod gemini;
-pub mod gemini_cli;
-// glm.rs excluded — not compiled in upstream (dead code with known issues)
-pub mod kilocli;
 pub mod multimodal;
 pub mod ollama;
 pub mod openai;
 pub mod openai_codex;
-pub mod openrouter;
 pub mod reliable;
 pub mod router;
-pub mod telnyx;
 pub mod traits;
 
 #[allow(unused_imports)]
@@ -62,8 +53,6 @@ const MINIMAX_OAUTH_REFRESH_TOKEN_ENV: &str = "MINIMAX_OAUTH_REFRESH_TOKEN";
 const MINIMAX_OAUTH_REGION_ENV: &str = "MINIMAX_OAUTH_REGION";
 const MINIMAX_OAUTH_CLIENT_ID_ENV: &str = "MINIMAX_OAUTH_CLIENT_ID";
 const MINIMAX_OAUTH_DEFAULT_CLIENT_ID: &str = "78257093-7e40-4613-99e0-527b14b39113";
-const GLM_GLOBAL_BASE_URL: &str = "https://api.z.ai/api/paas/v4";
-const GLM_CN_BASE_URL: &str = "https://open.bigmodel.cn/api/paas/v4";
 const MOONSHOT_INTL_BASE_URL: &str = "https://api.moonshot.ai/v1";
 const MOONSHOT_CN_BASE_URL: &str = "https://api.moonshot.cn/v1";
 const QWEN_CN_BASE_URL: &str = "https://dashscope.aliyuncs.com/compatible-mode/v1";
@@ -79,8 +68,6 @@ const QWEN_OAUTH_RESOURCE_URL_ENV: &str = "QWEN_OAUTH_RESOURCE_URL";
 const QWEN_OAUTH_CLIENT_ID_ENV: &str = "QWEN_OAUTH_CLIENT_ID";
 const QWEN_OAUTH_DEFAULT_CLIENT_ID: &str = "f0304373b74a44d2b584a3fb70ca9e56";
 const QWEN_OAUTH_CREDENTIAL_FILE: &str = ".qwen/oauth_creds.json";
-const ZAI_GLOBAL_BASE_URL: &str = "https://api.z.ai/api/coding/paas/v4";
-const ZAI_CN_BASE_URL: &str = "https://open.bigmodel.cn/api/coding/paas/v4";
 const QIANFAN_BASE_URL: &str = "https://qianfan.baidubce.com/v2";
 const VERCEL_AI_GATEWAY_BASE_URL: &str = "https://ai-gateway.vercel.sh/v1";
 
@@ -107,18 +94,6 @@ pub fn is_minimax_cn_alias(name: &str) -> bool {
 
 pub fn is_minimax_alias(name: &str) -> bool {
     is_minimax_intl_alias(name) || is_minimax_cn_alias(name)
-}
-
-pub fn is_glm_global_alias(name: &str) -> bool {
-    matches!(name, "glm" | "zhipu" | "glm-global" | "zhipu-global")
-}
-
-pub fn is_glm_cn_alias(name: &str) -> bool {
-    matches!(name, "glm-cn" | "zhipu-cn" | "bigmodel")
-}
-
-pub fn is_glm_alias(name: &str) -> bool {
-    is_glm_global_alias(name) || is_glm_cn_alias(name)
 }
 
 pub fn is_moonshot_intl_alias(name: &str) -> bool {
@@ -164,18 +139,6 @@ pub fn is_qwen_alias(name: &str) -> bool {
         || is_qwen_intl_alias(name)
         || is_qwen_us_alias(name)
         || is_qwen_oauth_alias(name)
-}
-
-pub fn is_zai_global_alias(name: &str) -> bool {
-    matches!(name, "zai" | "z.ai" | "zai-global" | "z.ai-global")
-}
-
-pub fn is_zai_cn_alias(name: &str) -> bool {
-    matches!(name, "zai-cn" | "z.ai-cn")
-}
-
-pub fn is_zai_alias(name: &str) -> bool {
-    is_zai_global_alias(name) || is_zai_cn_alias(name)
 }
 
 pub fn is_qianfan_alias(name: &str) -> bool {
@@ -619,14 +582,10 @@ fn resolve_minimax_oauth_refresh_token(name: &str) -> Option<String> {
 pub fn canonical_china_provider_name(name: &str) -> Option<&'static str> {
     if is_qwen_alias(name) {
         Some("qwen")
-    } else if is_glm_alias(name) {
-        Some("glm")
     } else if is_moonshot_alias(name) {
         Some("moonshot")
     } else if is_minimax_alias(name) {
         Some("minimax")
-    } else if is_zai_alias(name) {
-        Some("zai")
     } else if is_qianfan_alias(name) {
         Some("qianfan")
     } else if is_doubao_alias(name) {
@@ -643,16 +602,6 @@ fn minimax_base_url(name: &str) -> Option<&'static str> {
         Some(MINIMAX_CN_BASE_URL)
     } else if is_minimax_intl_alias(name) {
         Some(MINIMAX_INTL_BASE_URL)
-    } else {
-        None
-    }
-}
-
-fn glm_base_url(name: &str) -> Option<&'static str> {
-    if is_glm_cn_alias(name) {
-        Some(GLM_CN_BASE_URL)
-    } else if is_glm_global_alias(name) {
-        Some(GLM_GLOBAL_BASE_URL)
     } else {
         None
     }
@@ -675,16 +624,6 @@ fn qwen_base_url(name: &str) -> Option<&'static str> {
         Some(QWEN_INTL_BASE_URL)
     } else if is_qwen_us_alias(name) {
         Some(QWEN_US_BASE_URL)
-    } else {
-        None
-    }
-}
-
-fn zai_base_url(name: &str) -> Option<&'static str> {
-    if is_zai_cn_alias(name) {
-        Some(ZAI_CN_BASE_URL)
-    } else if is_zai_global_alias(name) {
-        Some(ZAI_GLOBAL_BASE_URL)
     } else {
         None
     }
@@ -863,7 +802,7 @@ pub async fn api_error(provider: &str, response: reqwest::Response) -> anyhow::E
 ///
 /// Resolution order:
 /// 1. Explicitly provided `api_key` parameter (trimmed, filtered if empty)
-/// 2. Provider-specific environment variable (e.g., `ANTHROPIC_OAUTH_TOKEN`, `OPENROUTER_API_KEY`)
+/// 2. Provider-specific environment variable (e.g., `ANTHROPIC_OAUTH_TOKEN`, `OPENAI_API_KEY`)
 /// 3. Generic fallback variables (`ZEROCLAW_API_KEY`, `API_KEY`)
 ///
 /// For Anthropic, the provider-specific env var is `ANTHROPIC_OAUTH_TOKEN` (for setup-tokens)
@@ -914,7 +853,6 @@ fn resolve_provider_credential(name: &str, credential_override: Option<&str>) ->
 
     let provider_env_candidates: Vec<&str> = match name {
         "anthropic" => vec!["ANTHROPIC_OAUTH_TOKEN", "ANTHROPIC_API_KEY"],
-        "openrouter" => vec!["OPENROUTER_API_KEY"],
         "openai" => vec!["OPENAI_API_KEY"],
         "ollama" => vec!["OLLAMA_API_KEY"],
         "venice" => vec!["VENICE_API_KEY"],
@@ -931,27 +869,13 @@ fn resolve_provider_credential(name: &str, credential_override: Option<&str>) ->
         "kimi-code" | "kimi_coding" | "kimi_for_coding" => {
             vec!["KIMI_CODE_API_KEY", "MOONSHOT_API_KEY"]
         }
-        name if is_glm_alias(name) => vec!["GLM_API_KEY"],
         name if is_minimax_alias(name) => vec![MINIMAX_OAUTH_TOKEN_ENV, MINIMAX_API_KEY_ENV],
-        // Bedrock supports Bearer token auth via BEDROCK_API_KEY env var, in addition
-        // to AWS AKSK (SigV4). If BEDROCK_API_KEY is set, return it; otherwise return
-        // None and let BedrockProvider handle SigV4 credential resolution internally.
-        "bedrock" | "aws-bedrock" => {
-            if let Ok(val) = std::env::var("BEDROCK_API_KEY") {
-                let trimmed = val.trim().to_string();
-                if !trimmed.is_empty() {
-                    return Some(trimmed);
-                }
-            }
-            return None;
-        }
         name if is_qianfan_alias(name) => vec!["QIANFAN_API_KEY"],
         name if is_doubao_alias(name) => {
             vec!["ARK_API_KEY", "VOLCENGINE_API_KEY", "DOUBAO_API_KEY"]
         }
         name if is_qwen_alias(name) => vec!["DASHSCOPE_API_KEY"],
         name if is_bailian_alias(name) => vec!["BAILIAN_API_KEY", "DASHSCOPE_API_KEY"],
-        name if is_zai_alias(name) => vec!["ZAI_API_KEY"],
         "nvidia" | "nvidia-nim" | "build.nvidia.com" => vec!["NVIDIA_API_KEY"],
         "synthetic" => vec!["SYNTHETIC_API_KEY"],
         "opencode" | "opencode-zen" => vec!["OPENCODE_API_KEY"],
@@ -968,8 +892,6 @@ fn resolve_provider_credential(name: &str, credential_override: Option<&str>) ->
         "aihubmix" => vec!["AIHUBMIX_API_KEY"],
         "siliconflow" | "silicon-flow" => vec!["SILICONFLOW_API_KEY"],
         "osaurus" => vec!["OSAURUS_API_KEY"],
-        "telnyx" => vec!["TELNYX_API_KEY"],
-        "azure_openai" | "azure-openai" | "azure" => vec!["AZURE_OPENAI_API_KEY"],
         _ => vec![],
     };
 
@@ -1013,8 +935,6 @@ fn check_api_key_prefix(provider_name: &str, key: &str) -> Option<&'static str> 
     // Identify which provider the key likely belongs to (longest prefix first).
     let likely_provider = if key.starts_with("sk-ant-") {
         Some("anthropic")
-    } else if key.starts_with("sk-or-") {
-        Some("openrouter")
     } else if key.starts_with("sk-") {
         Some("openai")
     } else if key.starts_with("gsk_") {
@@ -1025,8 +945,6 @@ fn check_api_key_prefix(provider_name: &str, key: &str) -> Option<&'static str> 
         Some("xai")
     } else if key.starts_with("nvapi-") {
         Some("nvidia")
-    } else if key.starts_with("KEY-") {
-        Some("telnyx")
     } else {
         None
     };
@@ -1036,13 +954,11 @@ fn check_api_key_prefix(provider_name: &str, key: &str) -> Option<&'static str> 
     // Only flag mismatch for providers where we know the key format.
     let matches = match provider_name {
         "anthropic" => expected == "anthropic",
-        "openrouter" => expected == "openrouter",
         "openai" => expected == "openai",
         "groq" => expected == "groq",
         "perplexity" => expected == "perplexity",
         "xai" | "grok" => expected == "xai",
         "nvidia" | "nvidia-nim" | "build.nvidia.com" => expected == "nvidia",
-        "telnyx" => expected == "telnyx",
         _ => return None, // Unknown format provider — skip
     };
 
@@ -1181,11 +1097,6 @@ fn create_provider_with_url_and_options(
                 key,
             )?))
         }
-        // ── Primary providers (custom implementations) ───────
-        "openrouter" => Ok(Box::new(
-            openrouter::OpenRouterProvider::new(key, options.provider_timeout_secs)
-                .with_max_tokens(options.provider_max_tokens),
-        )),
         "anthropic" => {
             let mut p = anthropic::AnthropicProvider::new(key);
             if let Some(mt) = options.provider_max_tokens {
@@ -1226,7 +1137,6 @@ fn create_provider_with_url_and_options(
                 options.auth_profile_override.clone(),
             )))
         }
-        "telnyx" => Ok(Box::new(telnyx::TelnyxProvider::new(key))),
 
         // ── OpenAI-compatible providers ──────────────────────
         "venice" => Ok(compat(
@@ -1283,20 +1193,6 @@ fn create_provider_with_url_and_options(
             key,
             AuthStyle::Bearer,
         ))),
-        name if zai_base_url(name).is_some() => Ok(compat(OpenAiCompatibleProvider::new(
-            "Z.AI",
-            zai_base_url(name).expect("checked in guard"),
-            key,
-            AuthStyle::ZhipuJwt,
-        ))),
-        name if glm_base_url(name).is_some() => {
-            Ok(compat(OpenAiCompatibleProvider::new_no_responses_fallback(
-                "GLM",
-                glm_base_url(name).expect("checked in guard"),
-                key,
-                AuthStyle::ZhipuJwt,
-            )))
-        }
         name if minimax_base_url(name).is_some() => Ok(compat(
             OpenAiCompatibleProvider::new_merge_system_into_user(
                 "MiniMax",
@@ -1305,30 +1201,6 @@ fn create_provider_with_url_and_options(
                 AuthStyle::Bearer,
             ),
         )),
-        "azure_openai" | "azure-openai" | "azure" => {
-            let resource = std::env::var("AZURE_OPENAI_RESOURCE")
-                .unwrap_or_else(|_| "my-resource".to_string());
-            let deployment =
-                std::env::var("AZURE_OPENAI_DEPLOYMENT").unwrap_or_else(|_| "gpt-4o".to_string());
-            let api_version = std::env::var("AZURE_OPENAI_API_VERSION").ok();
-            Ok(Box::new(azure_openai::AzureOpenAiProvider::new(
-                key,
-                &resource,
-                &deployment,
-                api_version.as_deref(),
-            )))
-        }
-        "bedrock" | "aws-bedrock" => {
-            let mut p = if let Some(api_key) = key {
-                bedrock::BedrockProvider::with_bearer_token(api_key)
-            } else {
-                bedrock::BedrockProvider::new()
-            };
-            if let Some(mt) = options.provider_max_tokens {
-                p = p.with_max_tokens(mt);
-            }
-            Ok(Box::new(p))
-        }
         name if is_qwen_oauth_alias(name) => {
             let base_url = api_url
                 .map(str::trim)
@@ -1442,10 +1314,6 @@ fn create_provider_with_url_and_options(
             key,
             AuthStyle::Bearer,
         ))),
-        "copilot" | "github-copilot" => Ok(Box::new(copilot::CopilotProvider::new(key))),
-        "claude-code" => Ok(Box::new(claude_code::ClaudeCodeProvider::new())),
-        "gemini-cli" => Ok(Box::new(gemini_cli::GeminiCliProvider::new())),
-        "kilocli" | "kilo" => Ok(Box::new(kilocli::KiloCliProvider::new())),
         "lmstudio" | "lm-studio" => {
             let lm_studio_key = key
                 .map(str::trim)
@@ -1732,7 +1600,7 @@ fn create_provider_with_url_and_options(
         }
 
         _ => anyhow::bail!(
-            "Unknown provider: {name}. Check README for supported providers or run `zeroclaw onboard` to reconfigure.\n\
+            "Unknown provider: {name}. Check README for supported providers.\n\
              Tip: Use \"custom:https://your-api.com\" for OpenAI-compatible endpoints.\n\
              Tip: Use \"anthropic-custom:https://your-api.com\" for Anthropic-compatible endpoints."
         ),
@@ -1938,7 +1806,7 @@ pub fn create_routed_provider_with_options(
 
 /// Information about a supported provider for display purposes.
 pub struct ProviderInfo {
-    /// Canonical name used in config (e.g. `"openrouter"`)
+    /// Canonical name used in config (e.g. `"openai"`)
     pub name: &'static str,
     /// Human-readable display name
     pub display_name: &'static str,
@@ -1956,12 +1824,6 @@ pub fn list_providers() -> Vec<ProviderInfo> {
     vec![
         // ── Primary providers ────────────────────────────────
         ProviderInfo {
-            name: "openrouter",
-            display_name: "OpenRouter",
-            aliases: &[],
-            local: false,
-        },
-        ProviderInfo {
             name: "anthropic",
             display_name: "Anthropic",
             aliases: &[],
@@ -1977,18 +1839,6 @@ pub fn list_providers() -> Vec<ProviderInfo> {
             name: "openai-codex",
             display_name: "OpenAI Codex (OAuth)",
             aliases: &["openai_codex", "codex"],
-            local: false,
-        },
-        ProviderInfo {
-            name: "telnyx",
-            display_name: "Telnyx",
-            aliases: &[],
-            local: false,
-        },
-        ProviderInfo {
-            name: "azure_openai",
-            display_name: "Azure OpenAI",
-            aliases: &["azure-openai", "azure"],
             local: false,
         },
         ProviderInfo {
@@ -2053,18 +1903,6 @@ pub fn list_providers() -> Vec<ProviderInfo> {
             local: false,
         },
         ProviderInfo {
-            name: "zai",
-            display_name: "Z.AI",
-            aliases: &["z.ai"],
-            local: false,
-        },
-        ProviderInfo {
-            name: "glm",
-            display_name: "GLM (Zhipu)",
-            aliases: &["zhipu"],
-            local: false,
-        },
-        ProviderInfo {
             name: "minimax",
             display_name: "MiniMax",
             aliases: &[
@@ -2078,12 +1916,6 @@ pub fn list_providers() -> Vec<ProviderInfo> {
                 "minimax-portal",
                 "minimax-portal-cn",
             ],
-            local: false,
-        },
-        ProviderInfo {
-            name: "bedrock",
-            display_name: "Amazon Bedrock",
-            aliases: &["aws-bedrock"],
             local: false,
         },
         ProviderInfo {
@@ -2172,30 +2004,6 @@ pub fn list_providers() -> Vec<ProviderInfo> {
             display_name: "Cohere",
             aliases: &[],
             local: false,
-        },
-        ProviderInfo {
-            name: "copilot",
-            display_name: "GitHub Copilot",
-            aliases: &["github-copilot"],
-            local: false,
-        },
-        ProviderInfo {
-            name: "claude-code",
-            display_name: "Claude Code (CLI)",
-            aliases: &[],
-            local: true,
-        },
-        ProviderInfo {
-            name: "gemini-cli",
-            display_name: "Gemini CLI",
-            aliases: &[],
-            local: true,
-        },
-        ProviderInfo {
-            name: "kilocli",
-            display_name: "KiloCLI",
-            aliases: &["kilo"],
-            local: true,
         },
         ProviderInfo {
             name: "lmstudio",
@@ -2428,7 +2236,7 @@ mod tests {
 
     #[test]
     fn resolve_provider_credential_prefers_explicit_argument() {
-        let resolved = resolve_provider_credential("openrouter", Some("  explicit-key  "));
+        let resolved = resolve_provider_credential("openai", Some("  explicit-key  "));
         assert_eq!(resolved, Some("explicit-key".to_string()));
     }
 
@@ -2467,34 +2275,6 @@ mod tests {
         let resolved = resolve_provider_credential("minimax", Some(MINIMAX_OAUTH_PLACEHOLDER));
 
         assert!(resolved.is_none());
-    }
-
-    #[test]
-    fn resolve_provider_credential_bedrock_uses_internal_credential_path() {
-        let _generic_guard = EnvGuard::set("API_KEY", Some("generic-key"));
-        let _override_guard = EnvGuard::set("OPENROUTER_API_KEY", Some("openrouter-key"));
-        let _bedrock_guard = EnvGuard::set("BEDROCK_API_KEY", None);
-
-        assert_eq!(
-            resolve_provider_credential("bedrock", Some("explicit")),
-            Some("explicit".to_string())
-        );
-        assert!(resolve_provider_credential("bedrock", None).is_none());
-        assert!(resolve_provider_credential("aws-bedrock", None).is_none());
-    }
-
-    #[test]
-    fn resolve_provider_credential_bedrock_returns_bearer_token_from_env() {
-        let _bedrock_guard = EnvGuard::set("BEDROCK_API_KEY", Some("bedrock-bearer-token"));
-
-        assert_eq!(
-            resolve_provider_credential("bedrock", None),
-            Some("bedrock-bearer-token".to_string())
-        );
-        assert_eq!(
-            resolve_provider_credential("aws-bedrock", None),
-            Some("bedrock-bearer-token".to_string())
-        );
     }
 
     #[test]
@@ -2586,8 +2366,6 @@ mod tests {
     fn regional_alias_predicates_cover_expected_variants() {
         assert!(is_moonshot_alias("moonshot"));
         assert!(is_moonshot_alias("kimi-global"));
-        assert!(is_glm_alias("glm"));
-        assert!(is_glm_alias("bigmodel"));
         assert!(is_minimax_alias("minimax-io"));
         assert!(is_minimax_alias("minimaxi"));
         assert!(is_minimax_alias("minimax-oauth"));
@@ -2597,8 +2375,6 @@ mod tests {
         assert!(is_qwen_alias("qwen-code"));
         assert!(is_qwen_oauth_alias("qwen-code"));
         assert!(is_qwen_oauth_alias("qwen_oauth"));
-        assert!(is_zai_alias("z.ai"));
-        assert!(is_zai_alias("zai-cn"));
         assert!(is_qianfan_alias("qianfan"));
         assert!(is_qianfan_alias("baidu"));
         assert!(is_doubao_alias("doubao"));
@@ -2606,10 +2382,8 @@ mod tests {
         assert!(is_doubao_alias("ark"));
         assert!(is_doubao_alias("doubao-cn"));
 
-        assert!(!is_moonshot_alias("openrouter"));
-        assert!(!is_glm_alias("openai"));
+        assert!(!is_moonshot_alias("openai"));
         assert!(!is_qwen_alias("gemini"));
-        assert!(!is_zai_alias("anthropic"));
         assert!(!is_qianfan_alias("cohere"));
         assert!(!is_doubao_alias("deepseek"));
     }
@@ -2618,15 +2392,11 @@ mod tests {
     fn canonical_china_provider_name_maps_regional_aliases() {
         assert_eq!(canonical_china_provider_name("moonshot"), Some("moonshot"));
         assert_eq!(canonical_china_provider_name("kimi-intl"), Some("moonshot"));
-        assert_eq!(canonical_china_provider_name("glm"), Some("glm"));
-        assert_eq!(canonical_china_provider_name("zhipu-cn"), Some("glm"));
         assert_eq!(canonical_china_provider_name("minimax"), Some("minimax"));
         assert_eq!(canonical_china_provider_name("minimax-cn"), Some("minimax"));
         assert_eq!(canonical_china_provider_name("qwen"), Some("qwen"));
         assert_eq!(canonical_china_provider_name("dashscope-us"), Some("qwen"));
         assert_eq!(canonical_china_provider_name("qwen-code"), Some("qwen"));
-        assert_eq!(canonical_china_provider_name("zai"), Some("zai"));
-        assert_eq!(canonical_china_provider_name("z.ai-cn"), Some("zai"));
         assert_eq!(canonical_china_provider_name("qianfan"), Some("qianfan"));
         assert_eq!(canonical_china_provider_name("baidu"), Some("qianfan"));
         assert_eq!(canonical_china_provider_name("doubao"), Some("doubao"));
@@ -2649,10 +2419,6 @@ mod tests {
         );
         assert_eq!(minimax_base_url("minimax-cn"), Some(MINIMAX_CN_BASE_URL));
 
-        assert_eq!(glm_base_url("glm"), Some(GLM_GLOBAL_BASE_URL));
-        assert_eq!(glm_base_url("glm-cn"), Some(GLM_CN_BASE_URL));
-        assert_eq!(glm_base_url("bigmodel"), Some(GLM_CN_BASE_URL));
-
         assert_eq!(moonshot_base_url("moonshot"), Some(MOONSHOT_CN_BASE_URL));
         assert_eq!(
             moonshot_base_url("moonshot-intl"),
@@ -2665,21 +2431,9 @@ mod tests {
         assert_eq!(qwen_base_url("qwen-us"), Some(QWEN_US_BASE_URL));
         assert_eq!(qwen_base_url("qwen-code"), Some(QWEN_CN_BASE_URL));
 
-        assert_eq!(zai_base_url("zai"), Some(ZAI_GLOBAL_BASE_URL));
-        assert_eq!(zai_base_url("z.ai"), Some(ZAI_GLOBAL_BASE_URL));
-        assert_eq!(zai_base_url("zai-global"), Some(ZAI_GLOBAL_BASE_URL));
-        assert_eq!(zai_base_url("z.ai-global"), Some(ZAI_GLOBAL_BASE_URL));
-        assert_eq!(zai_base_url("zai-cn"), Some(ZAI_CN_BASE_URL));
-        assert_eq!(zai_base_url("z.ai-cn"), Some(ZAI_CN_BASE_URL));
     }
 
     // ── Primary providers ────────────────────────────────────
-
-    #[test]
-    fn factory_openrouter() {
-        assert!(create_provider("openrouter", Some("provider-test-credential")).is_ok());
-        assert!(create_provider("openrouter", None).is_ok());
-    }
 
     #[test]
     fn factory_anthropic() {
@@ -2712,12 +2466,6 @@ mod tests {
         assert!(create_provider("google-gemini", Some("test-key")).is_ok());
         // Should also work without key (will try CLI auth)
         assert!(create_provider("gemini", None).is_ok());
-    }
-
-    #[test]
-    fn factory_telnyx() {
-        assert!(create_provider("telnyx", Some("test-key")).is_ok());
-        assert!(create_provider("telnyx", None).is_ok());
     }
 
     // ── OpenAI-compatible providers ──────────────────────────
@@ -2796,26 +2544,6 @@ mod tests {
     }
 
     #[test]
-    fn factory_zai() {
-        assert!(create_provider("zai", Some("key")).is_ok());
-        assert!(create_provider("z.ai", Some("key")).is_ok());
-        assert!(create_provider("zai-global", Some("key")).is_ok());
-        assert!(create_provider("z.ai-global", Some("key")).is_ok());
-        assert!(create_provider("zai-cn", Some("key")).is_ok());
-        assert!(create_provider("z.ai-cn", Some("key")).is_ok());
-    }
-
-    #[test]
-    fn factory_glm() {
-        assert!(create_provider("glm", Some("key")).is_ok());
-        assert!(create_provider("zhipu", Some("key")).is_ok());
-        assert!(create_provider("glm-cn", Some("key")).is_ok());
-        assert!(create_provider("zhipu-cn", Some("key")).is_ok());
-        assert!(create_provider("glm-global", Some("key")).is_ok());
-        assert!(create_provider("bigmodel", Some("key")).is_ok());
-    }
-
-    #[test]
     fn factory_minimax() {
         assert!(create_provider("minimax", Some("key")).is_ok());
         assert!(create_provider("minimax-intl", Some("key")).is_ok());
@@ -2837,15 +2565,6 @@ mod tests {
         let minimax_cn =
             create_provider("minimax-cn", Some("key")).expect("provider should resolve");
         assert!(!minimax_cn.supports_native_tools());
-    }
-
-    #[test]
-    fn factory_bedrock() {
-        // Bedrock uses AWS env vars for credentials, not API key.
-        assert!(create_provider("bedrock", None).is_ok());
-        assert!(create_provider("aws-bedrock", None).is_ok());
-        // Passing an api_key is harmless (ignored).
-        assert!(create_provider("bedrock", Some("ignored")).is_ok());
     }
 
     #[test]
@@ -3056,28 +2775,6 @@ mod tests {
     }
 
     #[test]
-    fn factory_copilot() {
-        assert!(create_provider("copilot", Some("key")).is_ok());
-        assert!(create_provider("github-copilot", Some("key")).is_ok());
-    }
-
-    #[test]
-    fn factory_claude_code() {
-        assert!(create_provider("claude-code", None).is_ok());
-    }
-
-    #[test]
-    fn factory_gemini_cli() {
-        assert!(create_provider("gemini-cli", None).is_ok());
-    }
-
-    #[test]
-    fn factory_kilocli() {
-        assert!(create_provider("kilocli", None).is_ok());
-        assert!(create_provider("kilo", None).is_ok());
-    }
-
-    #[test]
     fn factory_nvidia() {
         assert!(create_provider("nvidia", Some("nvapi-test")).is_ok());
         assert!(create_provider("nvidia-nim", Some("nvapi-test")).is_ok());
@@ -3244,7 +2941,7 @@ mod tests {
             provider_retries: 1,
             provider_backoff_ms: 100,
             fallback_providers: vec![
-                "openrouter".into(),
+                "anthropic".into(),
                 "nonexistent-provider".into(),
                 "openai".into(),
                 "openai".into(),
@@ -3258,7 +2955,7 @@ mod tests {
         };
 
         let provider = create_resilient_provider(
-            "openrouter",
+            "openai",
             Some("provider-test-credential"),
             None,
             &reliability,
@@ -3280,28 +2977,6 @@ mod tests {
 
     /// Fallback providers resolve their own credentials via provider-specific
     /// env vars rather than inheriting the primary provider's key.  A provider
-    /// that requires no key (e.g. lmstudio, ollama) must initialize
-    /// successfully even when the primary uses a completely different key.
-    #[test]
-    fn resilient_fallback_resolves_own_credential() {
-        let reliability = zeroclaw_config::schema::ReliabilityConfig {
-            provider_retries: 1,
-            provider_backoff_ms: 100,
-            fallback_providers: vec!["lmstudio".into(), "ollama".into()],
-            api_keys: Vec::new(),
-            model_fallbacks: std::collections::HashMap::new(),
-            channel_initial_backoff_secs: 2,
-            channel_max_backoff_secs: 60,
-            scheduler_poll_secs: 15,
-            scheduler_retries: 2,
-        };
-
-        // Primary uses a ZAI key; fallbacks (lmstudio, ollama) should NOT
-        // receive this key; they resolve their own credentials independently.
-        let provider = create_resilient_provider("zai", Some("zai-test-key"), None, &reliability);
-        assert!(provider.is_ok());
-    }
-
     /// `custom:` URL entries work as fallback providers, enabling arbitrary
     /// OpenAI-compatible endpoints (e.g. local LM Studio on a Docker host).
     #[test]
@@ -3323,31 +2998,6 @@ mod tests {
         assert!(provider.is_ok());
     }
 
-    /// Mixed fallback chain: named providers, custom URLs, and invalid entries
-    /// all coexist.  Invalid entries are silently ignored; valid ones initialize.
-    #[test]
-    fn resilient_fallback_mixed_chain() {
-        let reliability = zeroclaw_config::schema::ReliabilityConfig {
-            provider_retries: 1,
-            provider_backoff_ms: 100,
-            fallback_providers: vec![
-                "deepseek".into(),
-                "custom:http://localhost:8080/v1".into(),
-                "nonexistent-provider".into(),
-                "lmstudio".into(),
-            ],
-            api_keys: Vec::new(),
-            model_fallbacks: std::collections::HashMap::new(),
-            channel_initial_backoff_secs: 2,
-            channel_max_backoff_secs: 60,
-            scheduler_poll_secs: 15,
-            scheduler_retries: 2,
-        };
-
-        let provider = create_resilient_provider("zai", Some("zai-test-key"), None, &reliability);
-        assert!(provider.is_ok());
-    }
-
     #[test]
     fn ollama_with_custom_url() {
         let provider = create_provider_with_url("ollama", None, Some("http://10.100.2.32:11434"));
@@ -3361,29 +3011,9 @@ mod tests {
         assert!(provider.is_ok());
     }
 
-    /// Osaurus works as a fallback provider alongside other named providers.
-    #[test]
-    fn resilient_fallback_includes_osaurus() {
-        let reliability = zeroclaw_config::schema::ReliabilityConfig {
-            provider_retries: 1,
-            provider_backoff_ms: 100,
-            fallback_providers: vec!["osaurus".into(), "lmstudio".into()],
-            api_keys: Vec::new(),
-            model_fallbacks: std::collections::HashMap::new(),
-            channel_initial_backoff_secs: 2,
-            channel_max_backoff_secs: 60,
-            scheduler_poll_secs: 15,
-            scheduler_retries: 2,
-        };
-
-        let provider = create_resilient_provider("zai", Some("zai-test-key"), None, &reliability);
-        assert!(provider.is_ok());
-    }
-
     #[test]
     fn factory_all_providers_create_successfully() {
         let providers = [
-            "openrouter",
             "anthropic",
             "openai",
             "ollama",
@@ -3399,13 +3029,8 @@ mod tests {
             "synthetic",
             "opencode",
             "opencode-go",
-            "zai",
-            "zai-cn",
-            "glm",
-            "glm-cn",
             "minimax",
             "minimax-cn",
-            "bedrock",
             "qianfan",
             "doubao",
             "qwen",
@@ -3418,7 +3043,6 @@ mod tests {
             "sglang",
             "vllm",
             "osaurus",
-            "telnyx",
             "groq",
             "mistral",
             "xai",
@@ -3428,10 +3052,6 @@ mod tests {
             "novita",
             "perplexity",
             "cohere",
-            "copilot",
-            "claude-code",
-            "gemini-cli",
-            "kilocli",
             "nvidia",
             "astrai",
             "avian",
@@ -3635,14 +3255,6 @@ mod tests {
     }
 
     #[test]
-    fn parse_provider_profile_anthropic_custom_not_split() {
-        let input = "anthropic-custom:https://bedrock.example.com";
-        let (name, profile) = parse_provider_profile(input);
-        assert_eq!(name, input);
-        assert_eq!(profile, None);
-    }
-
-    #[test]
     fn parse_provider_profile_empty_profile_ignored() {
         let (name, profile) = parse_provider_profile("openai-codex:");
         assert_eq!(name, "openai-codex:");
@@ -3711,16 +3323,6 @@ mod tests {
 
     #[test]
     fn api_key_prefix_cross_provider_mismatch() {
-        // Anthropic key used with openrouter
-        assert_eq!(
-            check_api_key_prefix("openrouter", "sk-ant-api03-xyz"),
-            Some("anthropic")
-        );
-        // OpenRouter key used with anthropic
-        assert_eq!(
-            check_api_key_prefix("anthropic", "sk-or-v1-xyz"),
-            Some("openrouter")
-        );
         // Anthropic key used with openai
         assert_eq!(
             check_api_key_prefix("openai", "sk-ant-xyz"),
@@ -3733,7 +3335,6 @@ mod tests {
     #[test]
     fn api_key_prefix_correct_match() {
         assert_eq!(check_api_key_prefix("anthropic", "sk-ant-api03-xyz"), None);
-        assert_eq!(check_api_key_prefix("openrouter", "sk-or-v1-xyz"), None);
         assert_eq!(check_api_key_prefix("openai", "sk-proj-xyz"), None);
         assert_eq!(check_api_key_prefix("groq", "gsk_xyz"), None);
     }

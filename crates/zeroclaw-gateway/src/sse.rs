@@ -1,6 +1,6 @@
 //! Server-Sent Events (SSE) stream for real-time event delivery.
 //!
-//! Wraps the broadcast channel in AppState to deliver events to web dashboard clients.
+//! Wraps the broadcast channel in AppState to deliver events to gateway clients.
 
 use super::AppState;
 use axum::{

@@ -17,17 +17,6 @@ mod tests {
     }
 
     #[test]
-    fn factory_docker() {
-        let cfg = RuntimeConfig {
-            kind: "docker".into(),
-            ..RuntimeConfig::default()
-        };
-        let rt = create_runtime(&cfg).unwrap();
-        assert_eq!(rt.name(), "docker");
-        assert!(rt.has_shell_access());
-    }
-
-    #[test]
     fn factory_cloudflare_errors() {
         let cfg = RuntimeConfig {
             kind: "cloudflare".into(),

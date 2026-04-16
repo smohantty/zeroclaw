@@ -49,42 +49,10 @@ for readme in README.md docs/i18n/*/README.md; do
     "version-v${VERSION}-blue\" alt=\"Version v${VERSION}\""
 done
 
-# ── Tauri desktop app config ───────────────────────────────────────
-echo "Tauri config..."
-TAURI_CONF="$REPO_ROOT/apps/tauri/tauri.conf.json"
-if [[ -f "$TAURI_CONF" ]]; then
-  if command -v jq >/dev/null 2>&1; then
-    jq --arg v "$VERSION" '.version = $v' "$TAURI_CONF" > "$TAURI_CONF.tmp" \
-      && mv "$TAURI_CONF.tmp" "$TAURI_CONF"
-  else
-    sed -i '' -E "s|\"version\": \"[^\"]+\"|\"version\": \"$VERSION\"|" "$TAURI_CONF" 2>/dev/null \
-      || sed -i -E "s|\"version\": \"[^\"]+\"|\"version\": \"$VERSION\"|" "$TAURI_CONF"
-  fi
-  echo "  updated: apps/tauri/tauri.conf.json"
-  changed=$((changed + 1))
-fi
-
-# ── Marketplace: Dokploy ───────────────────────────────────────────
-echo "Marketplace templates..."
-bump "marketplace/dokploy/meta-entry.json" \
-  '"version": "[0-9]+\.[0-9]+\.[0-9]+"' \
-  "\"version\": \"${VERSION}\""
-
-bump "marketplace/dokploy/blueprints/zeroclaw/docker-compose.yml" \
-  'ghcr\.io/zeroclaw-labs/zeroclaw:[0-9]+\.[0-9]+\.[0-9]+' \
-  "ghcr.io/zeroclaw-labs/zeroclaw:${VERSION}"
-
-# ── Marketplace: EasyPanel ─────────────────────────────────────────
-bump "marketplace/easypanel/meta.yaml" \
-  'ghcr\.io/zeroclaw-labs/zeroclaw:[0-9]+\.[0-9]+\.[0-9]+' \
-  "ghcr.io/zeroclaw-labs/zeroclaw:${VERSION}"
-
 # ── Workflow description examples ──────────────────────────────────
 echo "Workflow descriptions..."
 for wf in \
-  .github/workflows/sync-marketplace-templates.yml \
-  .github/workflows/discord-release.yml \
-  marketplace/sync-marketplace-templates.yml; do
+  .github/workflows/discord-release.yml; do
   bump "$wf" \
     '\(e\.g\. v[0-9]+\.[0-9]+\.[0-9]+\)' \
     "(e.g. v${VERSION})"

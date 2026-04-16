@@ -1,4 +1,4 @@
-//! REST API handlers for the web dashboard.
+//! REST API handlers for gateway clients.
 //!
 //! All `/api/*` routes require bearer token authentication (PairingGuard).
 
@@ -980,18 +980,10 @@ fn mask_sensitive_fields(
 
     mask_vec_secrets(&mut masked.reliability.api_keys);
     mask_vec_secrets(&mut masked.gateway.paired_tokens);
-    mask_optional_secret(&mut masked.composio.api_key);
     mask_optional_secret(&mut masked.browser.computer_use.api_key);
     mask_optional_secret(&mut masked.web_search.brave_api_key);
     mask_optional_secret(&mut masked.storage.provider.config.db_url);
     mask_optional_secret(&mut masked.memory.qdrant.api_key);
-    if let Some(cloudflare) = masked.tunnel.cloudflare.as_mut() {
-        mask_required_secret(&mut cloudflare.token);
-    }
-    if let Some(ngrok) = masked.tunnel.ngrok.as_mut() {
-        mask_required_secret(&mut ngrok.auth_token);
-    }
-
     for agent in masked.agents.values_mut() {
         mask_optional_secret(&mut agent.api_key);
     }
@@ -1010,69 +1002,8 @@ fn mask_sensitive_fields(
     if let Some(telegram) = masked.channels.telegram.as_mut() {
         mask_required_secret(&mut telegram.bot_token);
     }
-    if let Some(discord) = masked.channels.discord.as_mut() {
-        mask_required_secret(&mut discord.bot_token);
-    }
-    if let Some(slack) = masked.channels.slack.as_mut() {
-        mask_required_secret(&mut slack.bot_token);
-        mask_optional_secret(&mut slack.app_token);
-    }
-    if let Some(mattermost) = masked.channels.mattermost.as_mut() {
-        mask_required_secret(&mut mattermost.bot_token);
-    }
     if let Some(webhook) = masked.channels.webhook.as_mut() {
         mask_optional_secret(&mut webhook.secret);
-    }
-    if let Some(matrix) = masked.channels.matrix.as_mut() {
-        mask_required_secret(&mut matrix.access_token);
-    }
-    if let Some(whatsapp) = masked.channels.whatsapp.as_mut() {
-        mask_optional_secret(&mut whatsapp.access_token);
-        mask_optional_secret(&mut whatsapp.app_secret);
-        mask_optional_secret(&mut whatsapp.verify_token);
-    }
-    if let Some(linq) = masked.channels.linq.as_mut() {
-        mask_required_secret(&mut linq.api_token);
-        mask_optional_secret(&mut linq.signing_secret);
-    }
-    if let Some(nextcloud) = masked.channels.nextcloud_talk.as_mut() {
-        mask_required_secret(&mut nextcloud.app_token);
-        mask_optional_secret(&mut nextcloud.webhook_secret);
-    }
-    if let Some(wati) = masked.channels.wati.as_mut() {
-        mask_required_secret(&mut wati.api_token);
-    }
-    if let Some(irc) = masked.channels.irc.as_mut() {
-        mask_optional_secret(&mut irc.server_password);
-        mask_optional_secret(&mut irc.nickserv_password);
-        mask_optional_secret(&mut irc.sasl_password);
-    }
-    if let Some(lark) = masked.channels.lark.as_mut() {
-        mask_required_secret(&mut lark.app_secret);
-        mask_optional_secret(&mut lark.encrypt_key);
-        mask_optional_secret(&mut lark.verification_token);
-    }
-    if let Some(feishu) = masked.channels.feishu.as_mut() {
-        mask_required_secret(&mut feishu.app_secret);
-        mask_optional_secret(&mut feishu.encrypt_key);
-        mask_optional_secret(&mut feishu.verification_token);
-    }
-    if let Some(dingtalk) = masked.channels.dingtalk.as_mut() {
-        mask_required_secret(&mut dingtalk.client_secret);
-    }
-    if let Some(qq) = masked.channels.qq.as_mut() {
-        mask_required_secret(&mut qq.app_secret);
-    }
-    #[cfg(feature = "channel-nostr")]
-    if let Some(nostr) = masked.channels.nostr.as_mut() {
-        mask_required_secret(&mut nostr.private_key);
-    }
-    if let Some(clawdtalk) = masked.channels.clawdtalk.as_mut() {
-        mask_required_secret(&mut clawdtalk.api_key);
-        mask_optional_secret(&mut clawdtalk.webhook_secret);
-    }
-    if let Some(email) = masked.channels.email.as_mut() {
-        mask_required_secret(&mut email.password);
     }
     mask_optional_secret(&mut masked.transcription.api_key);
     masked
@@ -1090,7 +1021,6 @@ fn restore_masked_sensitive_fields(
         &mut incoming.reliability.api_keys,
         &current.reliability.api_keys,
     );
-    restore_optional_secret(&mut incoming.composio.api_key, &current.composio.api_key);
     restore_optional_secret(
         &mut incoming.browser.computer_use.api_key,
         &current.browser.computer_use.api_key,
@@ -1107,19 +1037,6 @@ fn restore_masked_sensitive_fields(
         &mut incoming.memory.qdrant.api_key,
         &current.memory.qdrant.api_key,
     );
-    if let (Some(incoming_tunnel), Some(current_tunnel)) = (
-        incoming.tunnel.cloudflare.as_mut(),
-        current.tunnel.cloudflare.as_ref(),
-    ) {
-        restore_required_secret(&mut incoming_tunnel.token, &current_tunnel.token);
-    }
-    if let (Some(incoming_tunnel), Some(current_tunnel)) = (
-        incoming.tunnel.ngrok.as_mut(),
-        current.tunnel.ngrok.as_ref(),
-    ) {
-        restore_required_secret(&mut incoming_tunnel.auth_token, &current_tunnel.auth_token);
-    }
-
     for (name, agent) in &mut incoming.agents {
         if let Some(current_agent) = current.agents.get(name) {
             restore_optional_secret(&mut agent.api_key, &current_agent.api_key);
@@ -1141,130 +1058,10 @@ fn restore_masked_sensitive_fields(
         restore_required_secret(&mut incoming_ch.bot_token, &current_ch.bot_token);
     }
     if let (Some(incoming_ch), Some(current_ch)) = (
-        incoming.channels.discord.as_mut(),
-        current.channels.discord.as_ref(),
-    ) {
-        restore_required_secret(&mut incoming_ch.bot_token, &current_ch.bot_token);
-    }
-    if let (Some(incoming_ch), Some(current_ch)) = (
-        incoming.channels.slack.as_mut(),
-        current.channels.slack.as_ref(),
-    ) {
-        restore_required_secret(&mut incoming_ch.bot_token, &current_ch.bot_token);
-        restore_optional_secret(&mut incoming_ch.app_token, &current_ch.app_token);
-    }
-    if let (Some(incoming_ch), Some(current_ch)) = (
-        incoming.channels.mattermost.as_mut(),
-        current.channels.mattermost.as_ref(),
-    ) {
-        restore_required_secret(&mut incoming_ch.bot_token, &current_ch.bot_token);
-    }
-    if let (Some(incoming_ch), Some(current_ch)) = (
         incoming.channels.webhook.as_mut(),
         current.channels.webhook.as_ref(),
     ) {
         restore_optional_secret(&mut incoming_ch.secret, &current_ch.secret);
-    }
-    if let (Some(incoming_ch), Some(current_ch)) = (
-        incoming.channels.matrix.as_mut(),
-        current.channels.matrix.as_ref(),
-    ) {
-        restore_required_secret(&mut incoming_ch.access_token, &current_ch.access_token);
-    }
-    if let (Some(incoming_ch), Some(current_ch)) = (
-        incoming.channels.whatsapp.as_mut(),
-        current.channels.whatsapp.as_ref(),
-    ) {
-        restore_optional_secret(&mut incoming_ch.access_token, &current_ch.access_token);
-        restore_optional_secret(&mut incoming_ch.app_secret, &current_ch.app_secret);
-        restore_optional_secret(&mut incoming_ch.verify_token, &current_ch.verify_token);
-    }
-    if let (Some(incoming_ch), Some(current_ch)) = (
-        incoming.channels.linq.as_mut(),
-        current.channels.linq.as_ref(),
-    ) {
-        restore_required_secret(&mut incoming_ch.api_token, &current_ch.api_token);
-        restore_optional_secret(&mut incoming_ch.signing_secret, &current_ch.signing_secret);
-    }
-    if let (Some(incoming_ch), Some(current_ch)) = (
-        incoming.channels.nextcloud_talk.as_mut(),
-        current.channels.nextcloud_talk.as_ref(),
-    ) {
-        restore_required_secret(&mut incoming_ch.app_token, &current_ch.app_token);
-        restore_optional_secret(&mut incoming_ch.webhook_secret, &current_ch.webhook_secret);
-    }
-    if let (Some(incoming_ch), Some(current_ch)) = (
-        incoming.channels.wati.as_mut(),
-        current.channels.wati.as_ref(),
-    ) {
-        restore_required_secret(&mut incoming_ch.api_token, &current_ch.api_token);
-    }
-    if let (Some(incoming_ch), Some(current_ch)) = (
-        incoming.channels.irc.as_mut(),
-        current.channels.irc.as_ref(),
-    ) {
-        restore_optional_secret(
-            &mut incoming_ch.server_password,
-            &current_ch.server_password,
-        );
-        restore_optional_secret(
-            &mut incoming_ch.nickserv_password,
-            &current_ch.nickserv_password,
-        );
-        restore_optional_secret(&mut incoming_ch.sasl_password, &current_ch.sasl_password);
-    }
-    if let (Some(incoming_ch), Some(current_ch)) = (
-        incoming.channels.lark.as_mut(),
-        current.channels.lark.as_ref(),
-    ) {
-        restore_required_secret(&mut incoming_ch.app_secret, &current_ch.app_secret);
-        restore_optional_secret(&mut incoming_ch.encrypt_key, &current_ch.encrypt_key);
-        restore_optional_secret(
-            &mut incoming_ch.verification_token,
-            &current_ch.verification_token,
-        );
-    }
-    if let (Some(incoming_ch), Some(current_ch)) = (
-        incoming.channels.feishu.as_mut(),
-        current.channels.feishu.as_ref(),
-    ) {
-        restore_required_secret(&mut incoming_ch.app_secret, &current_ch.app_secret);
-        restore_optional_secret(&mut incoming_ch.encrypt_key, &current_ch.encrypt_key);
-        restore_optional_secret(
-            &mut incoming_ch.verification_token,
-            &current_ch.verification_token,
-        );
-    }
-    if let (Some(incoming_ch), Some(current_ch)) = (
-        incoming.channels.dingtalk.as_mut(),
-        current.channels.dingtalk.as_ref(),
-    ) {
-        restore_required_secret(&mut incoming_ch.client_secret, &current_ch.client_secret);
-    }
-    if let (Some(incoming_ch), Some(current_ch)) =
-        (incoming.channels.qq.as_mut(), current.channels.qq.as_ref())
-    {
-        restore_required_secret(&mut incoming_ch.app_secret, &current_ch.app_secret);
-    }
-    #[cfg(feature = "channel-nostr")]
-    if let (Some(incoming_ch), Some(current_ch)) = (
-        incoming.channels.nostr.as_mut(),
-        current.channels.nostr.as_ref(),
-    ) {
-        restore_required_secret(&mut incoming_ch.private_key, &current_ch.private_key);
-    }
-    if let (Some(incoming_ch), Some(current_ch)) = (
-        incoming.channels.clawdtalk.as_mut(),
-        current.channels.clawdtalk.as_ref(),
-    ) {
-        restore_required_secret(&mut incoming_ch.api_key, &current_ch.api_key);
-        restore_optional_secret(&mut incoming_ch.webhook_secret, &current_ch.webhook_secret);
-    }
-    if let (Some(incoming_ch), Some(current_ch)) = (
-        incoming.channels.email.as_mut(),
-        current.channels.email.as_ref(),
-    ) {
-        restore_required_secret(&mut incoming_ch.password, &current_ch.password);
     }
     restore_optional_secret(
         &mut incoming.transcription.api_key,
@@ -1672,9 +1469,6 @@ mod tests {
             session_queue: Arc::new(crate::session_queue::SessionActorQueue::new(8, 30, 600)),
             device_registry: None,
             pending_pairings: None,
-            path_prefix: String::new(),
-            web_dist_dir: None,
-            canvas_store: zeroclaw_runtime::tools::CanvasStore::new(),
             #[cfg(feature = "webauthn")]
             webauthn: None,
         }
@@ -1704,9 +1498,6 @@ mod tests {
         // Provider fields are now resolved directly — no cache needed.
         cfg.reliability.api_keys = vec!["rk-1".to_string(), "rk-2".to_string()];
         cfg.gateway.paired_tokens = vec!["pair-token-1".to_string()];
-        cfg.tunnel.cloudflare = Some(zeroclaw_config::schema::CloudflareTunnelConfig {
-            token: "cf-token".to_string(),
-        });
         cfg.memory.qdrant.api_key = Some("qdrant-key".to_string());
         cfg.channels.wati = Some(zeroclaw_config::schema::WatiConfig {
             enabled: true,
@@ -1745,8 +1536,8 @@ mod tests {
         });
         cfg.providers.model_routes = vec![zeroclaw_config::schema::ModelRouteConfig {
             hint: "reasoning".to_string(),
-            provider: "openrouter".to_string(),
-            model: "anthropic/claude-sonnet-4.6".to_string(),
+            provider: "openai".to_string(),
+            model: "gpt-5.2".to_string(),
             api_key: Some("route-model-key".to_string()),
         }];
         cfg.providers.embedding_routes = vec![zeroclaw_config::schema::EmbeddingRouteConfig {
@@ -1780,10 +1571,6 @@ mod tests {
         assert_eq!(
             parsed.gateway.paired_tokens,
             vec![MASKED_SECRET.to_string()]
-        );
-        assert_eq!(
-            parsed.tunnel.cloudflare.as_ref().map(|v| v.token.as_str()),
-            Some(MASKED_SECRET)
         );
         assert_eq!(
             parsed.channels.wati.as_ref().map(|v| v.api_token.as_str()),
@@ -1853,13 +1640,6 @@ mod tests {
         );
         current.reliability.api_keys = vec!["r1".to_string(), "r2".to_string()];
         current.gateway.paired_tokens = vec!["pair-1".to_string(), "pair-2".to_string()];
-        current.tunnel.cloudflare = Some(zeroclaw_config::schema::CloudflareTunnelConfig {
-            token: "cf-token-real".to_string(),
-        });
-        current.tunnel.ngrok = Some(zeroclaw_config::schema::NgrokTunnelConfig {
-            auth_token: "ngrok-token-real".to_string(),
-            domain: None,
-        });
         current.memory.qdrant.api_key = Some("qdrant-real".to_string());
         current.channels.wati = Some(zeroclaw_config::schema::WatiConfig {
             enabled: true,
@@ -1899,14 +1679,14 @@ mod tests {
         current.providers.model_routes = vec![
             zeroclaw_config::schema::ModelRouteConfig {
                 hint: "reasoning".to_string(),
-                provider: "openrouter".to_string(),
-                model: "anthropic/claude-sonnet-4.6".to_string(),
+                provider: "openai".to_string(),
+                model: "gpt-5.2".to_string(),
                 api_key: Some("route-model-key-1".to_string()),
             },
             zeroclaw_config::schema::ModelRouteConfig {
                 hint: "fast".to_string(),
-                provider: "openrouter".to_string(),
-                model: "openai/gpt-4.1-mini".to_string(),
+                provider: "openai".to_string(),
+                model: "gpt-4.1-mini".to_string(),
                 api_key: Some("route-model-key-2".to_string()),
             },
         ];
@@ -1934,12 +1714,6 @@ mod tests {
         // Simulate UI changing only one key and keeping the first masked.
         incoming.reliability.api_keys = vec![MASKED_SECRET.to_string(), "r2-new".to_string()];
         incoming.gateway.paired_tokens = vec![MASKED_SECRET.to_string(), "pair-2-new".to_string()];
-        if let Some(cloudflare) = incoming.tunnel.cloudflare.as_mut() {
-            cloudflare.token = MASKED_SECRET.to_string();
-        }
-        if let Some(ngrok) = incoming.tunnel.ngrok.as_mut() {
-            ngrok.auth_token = MASKED_SECRET.to_string();
-        }
         incoming.memory.qdrant.api_key = Some(MASKED_SECRET.to_string());
         if let Some(wati) = incoming.channels.wati.as_mut() {
             wati.api_token = MASKED_SECRET.to_string();
@@ -1983,22 +1757,6 @@ mod tests {
         assert_eq!(
             hydrated.gateway.paired_tokens,
             vec!["pair-1".to_string(), "pair-2-new".to_string()]
-        );
-        assert_eq!(
-            hydrated
-                .tunnel
-                .cloudflare
-                .as_ref()
-                .map(|v| v.token.as_str()),
-            Some("cf-token-real")
-        );
-        assert_eq!(
-            hydrated
-                .tunnel
-                .ngrok
-                .as_ref()
-                .map(|v| v.auth_token.as_str()),
-            Some("ngrok-token-real")
         );
         assert_eq!(
             hydrated.memory.qdrant.api_key.as_deref(),
@@ -2068,14 +1826,14 @@ mod tests {
         current.providers.model_routes = vec![
             zeroclaw_config::schema::ModelRouteConfig {
                 hint: "reasoning".to_string(),
-                provider: "openrouter".to_string(),
-                model: "anthropic/claude-sonnet-4.6".to_string(),
+                provider: "openai".to_string(),
+                model: "gpt-5.2".to_string(),
                 api_key: Some("route-model-key-1".to_string()),
             },
             zeroclaw_config::schema::ModelRouteConfig {
                 hint: "fast".to_string(),
-                provider: "openrouter".to_string(),
-                model: "openai/gpt-4.1-mini".to_string(),
+                provider: "openai".to_string(),
+                model: "gpt-4.1-mini".to_string(),
                 api_key: Some("route-model-key-2".to_string()),
             },
         ];

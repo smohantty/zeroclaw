@@ -7,10 +7,9 @@
 //! [`SecretStore`] handles encrypted credential storage.
 //!
 //! OS-level isolation is provided through the [`Sandbox`] trait defined in
-//! [`traits`], with pluggable backends including Docker, Firejail, Bubblewrap,
-//! and Landlock. The [`create_sandbox`] function selects the best available
-//! backend at runtime. An [`AuditLogger`] records security-relevant events for
-//! forensic review.
+//! [`traits`], with pluggable backends including Firejail and Bubblewrap. The
+//! [`create_sandbox`] function selects the best available backend at runtime.
+//! An [`AuditLogger`] records security-relevant events for forensic review.
 //!
 //! # Extension
 //!
@@ -22,25 +21,18 @@ pub mod audit;
 #[cfg(feature = "sandbox-bubblewrap")]
 pub mod bubblewrap;
 pub mod detect;
-pub mod docker;
 
 // Prompt injection defense (contributed from RustyClaw, MIT licensed)
 pub mod domain_matcher;
 pub mod estop;
 #[cfg(target_os = "linux")]
 pub mod firejail;
-pub mod iam_policy;
-#[cfg(feature = "sandbox-landlock")]
-pub mod landlock;
 pub mod leak_detector;
-pub mod nevis;
 pub mod otp;
 pub mod pairing;
 pub mod playbook;
 pub mod policy;
 pub mod prompt_guard;
-#[cfg(target_os = "macos")]
-pub mod seatbelt;
 pub mod secrets;
 pub mod traits;
 pub mod vulnerability;
@@ -64,11 +56,6 @@ pub use policy::{AutonomyLevel, SecurityPolicy};
 pub use secrets::SecretStore;
 #[allow(unused_imports)]
 pub use traits::{NoopSandbox, Sandbox};
-// Nevis IAM integration
-#[allow(unused_imports)]
-pub use iam_policy::{IamPolicy, PolicyDecision};
-#[allow(unused_imports)]
-pub use nevis::{NevisAuthProvider, NevisIdentity};
 // Prompt injection defense exports
 #[allow(unused_imports)]
 pub use leak_detector::{LeakDetector, LeakResult};

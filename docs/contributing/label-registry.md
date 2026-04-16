@@ -38,13 +38,11 @@ Applied automatically by `pr-path-labeler.yml` using `actions/labeler`. Matches 
 | `memory` | `src/memory/**` |
 | `security` | `src/security/**` |
 | `runtime` | `src/runtime/**` |
-| `onboard` | `src/onboard/**` |
 | `provider` | `src/providers/**` |
 | `service` | `src/service/**` |
 | `skillforge` | `src/skillforge/**` |
 | `skills` | `src/skills/**` |
 | `tool` | `src/tools/**` |
-| `tunnel` | `src/tunnel/**` |
 | `observability` | `src/observability/**` |
 | `tests` | `tests/**` |
 | `scripts` | `scripts/**` |
@@ -89,18 +87,10 @@ Each channel gets a specific label in addition to the base `channel` label.
 | Label | Matches |
 |---|---|
 | `provider:anthropic` | `anthropic.rs` |
-| `provider:azure-openai` | `azure_openai.rs` |
-| `provider:bedrock` | `bedrock.rs` |
-| `provider:claude-code` | `claude_code.rs` |
 | `provider:compatible` | `compatible.rs` |
-| `provider:copilot` | `copilot.rs` |
-| `provider:gemini` | `gemini.rs`, `gemini_cli.rs` |
-| `provider:glm` | `glm.rs` |
-| `provider:kilocli` | `kilocli.rs` |
+| `provider:gemini` | `gemini.rs` |
 | `provider:ollama` | `ollama.rs` |
 | `provider:openai` | `openai.rs`, `openai_codex.rs` |
-| `provider:openrouter` | `openrouter.rs` |
-| `provider:telnyx` | `telnyx.rs` |
 
 ### Per-group tool labels
 
@@ -108,16 +98,12 @@ Tools are grouped by logical function rather than one label per file.
 
 | Label | Matches |
 |---|---|
-| `tool:browser` | `browser.rs`, `browser_delegate.rs`, `browser_open.rs`, `text_browser.rs`, `screenshot.rs` |
-| `tool:cloud` | `cloud_ops.rs`, `cloud_patterns.rs` |
-| `tool:composio` | `composio.rs` |
+| `tool:browser` | `browser.rs`, `browser_delegate.rs`, `browser_open.rs`, `screenshot.rs` |
 | `tool:cron` | `cron_add.rs`, `cron_list.rs`, `cron_remove.rs`, `cron_run.rs`, `cron_runs.rs`, `cron_update.rs` |
 | `tool:file` | `file_edit.rs`, `file_read.rs`, `file_write.rs`, `glob_search.rs`, `content_search.rs` |
-| `tool:google-workspace` | `google_workspace.rs` |
 | `tool:mcp` | `mcp_client.rs`, `mcp_deferred.rs`, `mcp_protocol.rs`, `mcp_tool.rs`, `mcp_transport.rs` |
 | `tool:memory` | `memory_forget.rs`, `memory_recall.rs`, `memory_store.rs` |
-| `tool:microsoft365` | `microsoft365/**` |
-| `tool:security` | `security_ops.rs`, `verifiable_intent.rs` |
+| `tool:security` | `security_ops.rs` |
 | `tool:shell` | `shell.rs`, `node_tool.rs`, `cli_discovery.rs` |
 | `tool:sop` | `sop_advance.rs`, `sop_approve.rs`, `sop_execute.rs`, `sop_list.rs`, `sop_status.rs` |
 | `tool:web` | `web_fetch.rs`, `web_search_tool.rs`, `web_search_provider_routing.rs`, `http_request.rs` |

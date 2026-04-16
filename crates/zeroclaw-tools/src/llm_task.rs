@@ -17,7 +17,7 @@ use zeroclaw_config::policy::ToolOperation;
 /// this is a pure text-in, text-out (or JSON-out) call.
 pub struct LlmTaskTool {
     security: Arc<SecurityPolicy>,
-    /// Default provider name from root config (e.g. "openrouter").
+    /// Default provider name from root config (e.g. "openai").
     default_provider: String,
     /// Default model from root config.
     default_model: String,
@@ -414,7 +414,7 @@ mod tests {
     fn tool_metadata() {
         let tool = LlmTaskTool::new(
             Arc::new(SecurityPolicy::default()),
-            "openrouter".to_string(),
+            "openai".to_string(),
             "test-model".to_string(),
             0.7,
             None,
@@ -440,7 +440,7 @@ mod tests {
     async fn execute_missing_prompt_returns_error() {
         let tool = LlmTaskTool::new(
             Arc::new(SecurityPolicy::default()),
-            "openrouter".to_string(),
+            "openai".to_string(),
             "test-model".to_string(),
             0.7,
             None,
@@ -456,7 +456,7 @@ mod tests {
     async fn execute_empty_prompt_returns_error() {
         let tool = LlmTaskTool::new(
             Arc::new(SecurityPolicy::default()),
-            "openrouter".to_string(),
+            "openai".to_string(),
             "test-model".to_string(),
             0.7,
             None,

@@ -3,30 +3,6 @@
 //! These are extracted from the providers module to break the circular
 //! dependency between config and providers.
 
-pub fn is_glm_global_alias(name: &str) -> bool {
-    matches!(name, "glm" | "zhipu" | "glm-global" | "zhipu-global")
-}
-
-pub fn is_glm_cn_alias(name: &str) -> bool {
-    matches!(name, "glm-cn" | "zhipu-cn" | "bigmodel")
-}
-
-pub fn is_glm_alias(name: &str) -> bool {
-    is_glm_global_alias(name) || is_glm_cn_alias(name)
-}
-
-pub fn is_zai_global_alias(name: &str) -> bool {
-    matches!(name, "zai" | "z.ai" | "zai-global" | "z.ai-global")
-}
-
-pub fn is_zai_cn_alias(name: &str) -> bool {
-    matches!(name, "zai-cn" | "z.ai-cn")
-}
-
-pub fn is_zai_alias(name: &str) -> bool {
-    is_zai_global_alias(name) || is_zai_cn_alias(name)
-}
-
 pub fn is_minimax_intl_alias(name: &str) -> bool {
     matches!(
         name,
@@ -108,14 +84,10 @@ pub fn is_doubao_alias(name: &str) -> bool {
 pub fn canonical_china_provider_name(name: &str) -> Option<&'static str> {
     if is_qwen_alias(name) {
         Some("qwen")
-    } else if is_glm_alias(name) {
-        Some("glm")
     } else if is_moonshot_alias(name) {
         Some("moonshot")
     } else if is_minimax_alias(name) {
         Some("minimax")
-    } else if is_zai_alias(name) {
-        Some("zai")
     } else if is_qianfan_alias(name) {
         Some("qianfan")
     } else if is_doubao_alias(name) {

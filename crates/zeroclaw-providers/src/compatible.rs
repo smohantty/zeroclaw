@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 
 /// A provider that speaks the OpenAI-compatible chat completions API.
 /// Used by: Venice, Vercel AI Gateway, Cloudflare AI Gateway, Moonshot,
-/// Synthetic, `OpenCode` Zen, `OpenCode` Go, `Z.AI`, `GLM`, `MiniMax`, Bedrock, Qianfan, Groq, Mistral, `xAI`, etc.
+/// Synthetic, `OpenCode` Zen, `OpenCode` Go, `MiniMax`, Qianfan, Groq, Mistral, `xAI`, etc.
 #[allow(clippy::struct_excessive_bools)]
 pub struct OpenAiCompatibleProvider {
     pub name: String,
@@ -59,42 +59,6 @@ pub enum AuthStyle {
     XApiKey,
     /// Custom header name
     Custom(String),
-    /// Zhipu/GLM JWT auth: the credential is `id.secret`, and a short-lived
-    /// JWT (HMAC-SHA256, 3.5 min expiry) is generated per request.
-    /// Used by Z.AI and GLM providers.
-    ZhipuJwt,
-}
-
-/// Generate a Zhipu JWT from an `id.secret` API key.
-/// Returns `Authorization: Bearer <jwt>` value. Token is valid for 3.5 minutes.
-fn zhipu_jwt_bearer(credential: &str) -> Result<String, String> {
-    let (id, secret) = credential
-        .split_once('.')
-        .ok_or_else(|| "Zhipu API key must be in 'id.secret' format".to_string())?;
-
-    #[allow(clippy::cast_possible_truncation)] // millis won't exceed u64 until year 584 million
-    let now_ms = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_err(|e| e.to_string())?
-        .as_millis() as u64;
-    let exp_ms = now_ms + 210_000; // 3.5 minutes
-
-    // Header: {"alg":"HS256","typ":"JWT","sign_type":"SIGN"}
-    let header_b64 = base64url_no_pad(br#"{"alg":"HS256","typ":"JWT","sign_type":"SIGN"}"#);
-    let payload = format!(r#"{{"api_key":"{id}","exp":{exp_ms},"timestamp":{now_ms}}}"#);
-    let payload_b64 = base64url_no_pad(payload.as_bytes());
-
-    let signing_input = format!("{header_b64}.{payload_b64}");
-    let key = ring::hmac::Key::new(ring::hmac::HMAC_SHA256, secret.as_bytes());
-    let sig = ring::hmac::sign(&key, signing_input.as_bytes());
-    let sig_b64 = base64url_no_pad(sig.as_ref());
-
-    Ok(format!("Bearer {signing_input}.{sig_b64}"))
-}
-
-fn base64url_no_pad(data: &[u8]) -> String {
-    use base64::engine::{Engine, general_purpose::URL_SAFE_NO_PAD};
-    URL_SAFE_NO_PAD.encode(data)
 }
 
 /// Apply auth to a request builder (usable from spawned tasks without `&self`).
@@ -114,10 +78,6 @@ fn apply_auth_to_request(
         AuthStyle::Bearer => req.header("Authorization", format!("Bearer {credential}")),
         AuthStyle::XApiKey => req.header("x-api-key", credential),
         AuthStyle::Custom(header) => req.header(header, credential),
-        AuthStyle::ZhipuJwt => match zhipu_jwt_bearer(credential) {
-            Ok(val) => req.header("Authorization", val),
-            Err(_) => req.header("Authorization", format!("Bearer {credential}")),
-        },
     }
 }
 
@@ -423,21 +383,8 @@ impl OpenAiCompatibleProvider {
         !path.is_empty() && path != "/"
     }
 
-    fn requires_tool_stream(&self) -> bool {
-        let host_requires_tool_stream = reqwest::Url::parse(&self.base_url)
-            .ok()
-            .and_then(|url| url.host_str().map(str::to_ascii_lowercase))
-            .is_some_and(|host| host == "api.z.ai" || host.ends_with(".z.ai"));
-
-        host_requires_tool_stream || matches!(self.name.as_str(), "zai" | "z.ai")
-    }
-
-    fn tool_stream_for_tools(&self, has_tools: bool) -> Option<bool> {
-        if has_tools && self.requires_tool_stream() {
-            Some(true)
-        } else {
-            None
-        }
+    fn tool_stream_for_tools(&self, _has_tools: bool) -> Option<bool> {
+        None
     }
 
     /// Build the full URL for responses API, detecting if base_url already includes the path.
@@ -2578,79 +2525,6 @@ mod tests {
         assert!(matches!(p.auth_header, AuthStyle::Custom(_)));
     }
 
-    #[test]
-    fn zhipu_jwt_produces_valid_three_part_token() {
-        let result = zhipu_jwt_bearer("testid.testsecret").unwrap();
-        assert!(result.starts_with("Bearer "));
-        let jwt = result.strip_prefix("Bearer ").unwrap();
-        let parts: Vec<&str> = jwt.split('.').collect();
-        assert_eq!(parts.len(), 3, "JWT must have 3 dot-separated parts: {jwt}");
-    }
-
-    #[test]
-    fn zhipu_jwt_header_is_correct() {
-        use base64::engine::{Engine, general_purpose::URL_SAFE_NO_PAD};
-        let result = zhipu_jwt_bearer("myid.mysecret").unwrap();
-        let jwt = result.strip_prefix("Bearer ").unwrap();
-        let header_b64 = jwt.split('.').next().unwrap();
-        let header_bytes = URL_SAFE_NO_PAD.decode(header_b64).unwrap();
-        let header: serde_json::Value = serde_json::from_slice(&header_bytes).unwrap();
-        assert_eq!(header["alg"], "HS256");
-        assert_eq!(header["typ"], "JWT");
-        assert_eq!(header["sign_type"], "SIGN");
-    }
-
-    #[test]
-    fn zhipu_jwt_payload_contains_api_key_and_timestamps() {
-        use base64::engine::{Engine, general_purpose::URL_SAFE_NO_PAD};
-        let result = zhipu_jwt_bearer("myapiid.mysecretkey").unwrap();
-        let jwt = result.strip_prefix("Bearer ").unwrap();
-        let payload_b64 = jwt.split('.').nth(1).unwrap();
-        let payload_bytes = URL_SAFE_NO_PAD.decode(payload_b64).unwrap();
-        let payload: serde_json::Value = serde_json::from_slice(&payload_bytes).unwrap();
-        assert_eq!(payload["api_key"], "myapiid");
-        assert!(payload["exp"].is_number());
-        assert!(payload["timestamp"].is_number());
-        // exp should be ~210s after timestamp
-        let ts = payload["timestamp"].as_u64().unwrap();
-        let exp = payload["exp"].as_u64().unwrap();
-        assert_eq!(exp - ts, 210_000);
-    }
-
-    #[test]
-    fn zhipu_jwt_signature_is_verifiable() {
-        let secret = "testsecret123";
-        let credential = format!("testid.{secret}");
-        let result = zhipu_jwt_bearer(&credential).unwrap();
-        let jwt = result.strip_prefix("Bearer ").unwrap();
-        let parts: Vec<&str> = jwt.split('.').collect();
-        let signing_input = format!("{}.{}", parts[0], parts[1]);
-
-        // Verify HMAC-SHA256 signature
-        let key = ring::hmac::Key::new(ring::hmac::HMAC_SHA256, secret.as_bytes());
-        use base64::engine::{Engine, general_purpose::URL_SAFE_NO_PAD};
-        let sig_bytes = URL_SAFE_NO_PAD.decode(parts[2]).unwrap();
-        ring::hmac::verify(&key, signing_input.as_bytes(), &sig_bytes)
-            .expect("signature must verify");
-    }
-
-    #[test]
-    fn zhipu_jwt_rejects_invalid_key_format() {
-        assert!(zhipu_jwt_bearer("no-dot-here").is_err());
-        assert!(zhipu_jwt_bearer("").is_err());
-    }
-
-    #[test]
-    fn zhipu_jwt_auth_style_applies_correctly() {
-        let p = OpenAiCompatibleProvider::new(
-            "Z.AI",
-            "https://api.z.ai/api/coding/paas/v4",
-            Some("testid.testsecret"),
-            AuthStyle::ZhipuJwt,
-        );
-        assert!(matches!(p.auth_header, AuthStyle::ZhipuJwt));
-    }
-
     #[tokio::test]
     async fn all_compatible_providers_attempt_request_without_key() {
         let providers = vec![
@@ -2978,32 +2852,12 @@ mod tests {
     // ----------------------------------------------------------
 
     #[test]
-    fn chat_completions_url_zai() {
-        // Z.AI uses /api/paas/v4 base path
-        let p = make_provider("zai", "https://api.z.ai/api/paas/v4", None);
-        assert_eq!(
-            p.chat_completions_url(),
-            "https://api.z.ai/api/paas/v4/chat/completions"
-        );
-    }
-
-    #[test]
     fn chat_completions_url_minimax() {
         // MiniMax OpenAI-compatible endpoint requires /v1 base path.
         let p = make_provider("minimax", "https://api.minimaxi.com/v1", None);
         assert_eq!(
             p.chat_completions_url(),
             "https://api.minimaxi.com/v1/chat/completions"
-        );
-    }
-
-    #[test]
-    fn chat_completions_url_glm() {
-        // GLM (BigModel) uses /api/paas/v4 base path
-        let p = make_provider("glm", "https://open.bigmodel.cn/api/paas/v4", None);
-        assert_eq!(
-            p.chat_completions_url(),
-            "https://open.bigmodel.cn/api/paas/v4/chat/completions"
         );
     }
 
@@ -3380,40 +3234,6 @@ mod tests {
     }
 
     #[test]
-    fn zai_tool_requests_enable_tool_stream() {
-        let provider = make_provider("zai", "https://api.z.ai/api/paas/v4", None);
-        let req = ApiChatRequest {
-            model: "glm-5".to_string(),
-            messages: vec![Message {
-                role: "user".to_string(),
-                content: MessageContent::Text("List /tmp".to_string()),
-            }],
-            temperature: 0.7,
-            stream: Some(false),
-            reasoning_effort: None,
-            tool_stream: provider.tool_stream_for_tools(true),
-            tools: Some(vec![serde_json::json!({
-                "type": "function",
-                "function": {
-                    "name": "shell",
-                    "description": "Run a shell command",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "command": {"type": "string"}
-                        }
-                    }
-                }
-            })]),
-            tool_choice: Some("auto".to_string()),
-            max_tokens: None,
-        };
-
-        let json = serde_json::to_string(&req).unwrap();
-        assert!(json.contains("\"tool_stream\":true"));
-    }
-
-    #[test]
     fn non_zai_tool_requests_omit_tool_stream() {
         let provider = make_provider("test", "https://api.example.com/v1", None);
         let req = ApiChatRequest {
@@ -3445,12 +3265,6 @@ mod tests {
 
         let json = serde_json::to_string(&req).unwrap();
         assert!(!json.contains("\"tool_stream\""));
-    }
-
-    #[test]
-    fn z_ai_host_enables_tool_stream_for_custom_profiles() {
-        let provider = make_provider("custom", "https://api.z.ai/api/coding/paas/v4", None);
-        assert_eq!(provider.tool_stream_for_tools(true), Some(true));
     }
 
     #[test]

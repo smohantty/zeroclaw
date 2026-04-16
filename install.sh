@@ -139,7 +139,6 @@ Options:
   --prefix PATH        Install everything under PATH (default: \$HOME)
                        Sets CARGO_HOME, RUSTUP_HOME, source checkout, config
   --dry-run            Show what would happen without building or installing
-  --skip-onboard       Skip the setup wizard after install
   --uninstall          Remove ZeroClaw binary and optionally config/data
   -h, --help           Show this help
   -V, --version        Show version from Cargo.toml
@@ -148,8 +147,6 @@ Examples:
   $0                                          # full install (interactive)
   $0 --minimal                                # smallest possible binary
   $0 --features agent-runtime,channel-discord  # custom feature set
-  $0 --skip-onboard                           # build only, configure later
-  $0 --prefix /tmp/zc-test --skip-onboard     # isolated test install
   $0 --dry-run --minimal                      # preview without building
   $0 --uninstall                              # remove ZeroClaw
 
@@ -211,7 +208,6 @@ do_uninstall() {
 
 MINIMAL=false
 USER_FEATURES=""
-SKIP_ONBOARD=false
 LIST_FEATURES=false
 UNINSTALL=false
 DRY_RUN=false
@@ -237,7 +233,6 @@ while [ $# -gt 0 ]; do
       fi
       shift; PREFIX=$(echo "$1" | sed 's|/*$||') ;;
     --dry-run)        DRY_RUN=true ;;
-    --skip-onboard)   SKIP_ONBOARD=true ;;
     --uninstall)      UNINSTALL=true ;;
     -h|--help)        usage; exit 0 ;;
     -V|--version)
@@ -337,21 +332,6 @@ if [ "$DRY_RUN" != true ]; then
   fi
   info "Rust $RUST_VERSION (>= $MSRV)"
 fi
-
-# ── Preflight: 32-bit ARM ────────────────────────────────────────
-
-case "$(uname -m)" in
-  armv7l|armv6l|armhf)
-    die "32-bit ARM detected — the default feature 'observability-prometheus'
-requires 64-bit atomics and will not compile on this architecture.
-
-Example (full agent without prometheus):
-  $0 --minimal --features agent-runtime,schema-export
-
-See all available features:
-  $0 --list-features"
-    ;;
-esac
 
 # ── Build feature flags ──────────────────────────────────────────
 
@@ -486,19 +466,6 @@ if [ "$SHOW_PATH_HELP" = true ]; then
   echo
   printf "    source %s\n" "$PROFILE"
   echo
-fi
-
-# ── Onboard ───────────────────────────────────────────────────────
-
-if [ "$SKIP_ONBOARD" = false ] && [ -f "$BIN" ]; then
-  if [ -t 0 ]; then
-    echo
-    printf "%s\n" "$(bold "Running setup wizard...")"
-    echo
-    "$BIN" onboard || warn "Onboard wizard exited with an error — run 'zeroclaw onboard' manually"
-  else
-    info "Non-interactive — skipping onboard wizard. Run 'zeroclaw onboard' to configure."
-  fi
 fi
 
 echo

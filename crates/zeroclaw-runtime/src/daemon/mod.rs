@@ -70,16 +70,6 @@ pub struct DaemonSubsystems {
                 + Sync,
         >,
     >,
-    /// Start the MQTT SOP listener. Injected by the binary when channels crate is available.
-    pub mqtt_start: Option<
-        Box<
-            dyn Fn(
-                    zeroclaw_config::schema::MqttConfig,
-                ) -> std::pin::Pin<Box<dyn Future<Output = Result<()>> + Send>>
-                + Send
-                + Sync,
-        >,
-    >,
 }
 
 pub async fn run(
@@ -97,7 +87,7 @@ pub async fn run(
     crate::health::mark_component_ok("daemon");
 
     // Shared broadcast channel so all daemon components (gateway, cron,
-    // heartbeat) can publish real-time events to dashboard clients.
+    // heartbeat) can publish real-time events to gateway clients.
     let (event_tx, _rx) = tokio::sync::broadcast::channel::<serde_json::Value>(256);
 
     if config.heartbeat.enabled {
@@ -148,33 +138,6 @@ pub async fn run(
     } else {
         crate::health::mark_component_ok("channels");
         tracing::info!("Channels subsystem not wired; channel supervisor disabled");
-    }
-
-    // Wire up MQTT SOP listener if configured and enabled
-    if let Some(mqtt_start) = subsystems.mqtt_start {
-        if let Some(ref mqtt_config) = config.channels.mqtt {
-            if mqtt_config.enabled {
-                let mqtt_cfg = mqtt_config.clone();
-                let mqtt_start = std::sync::Arc::new(mqtt_start);
-                handles.push(spawn_component_supervisor(
-                    "mqtt",
-                    initial_backoff,
-                    max_backoff,
-                    move || {
-                        let cfg = mqtt_cfg.clone();
-                        let start = mqtt_start.clone();
-                        async move { start(cfg).await }
-                    },
-                ));
-            } else {
-                tracing::info!("MQTT channel configured but disabled (enabled = false)");
-                crate::health::mark_component_ok("mqtt");
-            }
-        } else {
-            crate::health::mark_component_ok("mqtt");
-        }
-    } else {
-        crate::health::mark_component_ok("mqtt");
     }
 
     if config.heartbeat.enabled {
@@ -416,7 +379,6 @@ async fn run_heartbeat_worker(config: Config) -> Result<()> {
                 None,
                 None,
                 0.0,
-                vec![],
                 false,
                 None,
                 None,
@@ -539,7 +501,6 @@ async fn run_heartbeat_worker(config: Config) -> Result<()> {
                 None,
                 None,
                 temp,
-                vec![],
                 false,
                 None,
                 None,
@@ -900,25 +861,12 @@ fn load_jsonl_messages(path: &std::path::Path) -> Vec<zeroclaw_providers::traits
 /// Auto-detect the best channel for heartbeat delivery by checking which
 /// channels are configured. Returns the first match in priority order.
 fn auto_detect_heartbeat_channel(config: &Config) -> Option<(String, String)> {
-    // Priority order: telegram > discord > slack > mattermost
     if let Some(tg) = &config.channels.telegram {
         // Use the first allowed_user as target, or fall back to empty (broadcast)
         let target = tg.allowed_users.first().cloned().unwrap_or_default();
         if !target.is_empty() {
             return Some(("telegram".to_string(), target));
         }
-    }
-    if config.channels.discord.is_some() {
-        // Discord requires explicit target — can't auto-detect
-        return None;
-    }
-    if config.channels.slack.is_some() {
-        // Slack requires explicit target
-        return None;
-    }
-    if config.channels.mattermost.is_some() {
-        // Mattermost requires explicit target
-        return None;
     }
     None
 }
@@ -929,27 +877,6 @@ fn validate_heartbeat_channel_config(config: &Config, channel: &str) -> Result<(
             if config.channels.telegram.is_none() {
                 anyhow::bail!(
                     "heartbeat.target is set to telegram but channels.telegram is not configured"
-                );
-            }
-        }
-        "discord" => {
-            if config.channels.discord.is_none() {
-                anyhow::bail!(
-                    "heartbeat.target is set to discord but channels.discord is not configured"
-                );
-            }
-        }
-        "slack" => {
-            if config.channels.slack.is_none() {
-                anyhow::bail!(
-                    "heartbeat.target is set to slack but channels.slack is not configured"
-                );
-            }
-        }
-        "mattermost" => {
-            if config.channels.mattermost.is_none() {
-                anyhow::bail!(
-                    "heartbeat.target is set to mattermost but channels.mattermost is not configured"
                 );
             }
         }
@@ -966,9 +893,6 @@ fn has_supervised_channels(config: &Config) -> bool {
         .iter()
         .any(|(_, ok)| *ok)
 }
-
-// run_mqtt_sop_listener has been moved to zeroclaw-channels::orchestrator::mqtt.
-// The daemon now receives it as a callback via DaemonSubsystems::mqtt_start.
 
 #[cfg(test)]
 mod tests {

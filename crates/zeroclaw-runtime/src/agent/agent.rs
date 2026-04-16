@@ -391,17 +391,6 @@ impl Agent {
                 fallback_provider_ag.and_then(|e| e.api_key.as_deref()),
             )?);
 
-        let composio_key = if config.composio.enabled {
-            config.composio.api_key.as_deref()
-        } else {
-            None
-        };
-        let composio_entity_id = if config.composio.enabled {
-            Some(config.composio.entity_id.as_str())
-        } else {
-            None
-        };
-
         let (
             mut tools,
             delegate_handle,
@@ -414,8 +403,6 @@ impl Agent {
             &security,
             runtime,
             memory.clone(),
-            composio_key,
-            composio_entity_id,
             &config.browser,
             &config.http_request,
             &config.web_fetch,
@@ -423,7 +410,6 @@ impl Agent {
             &config.agents,
             fallback_provider_ag.and_then(|e| e.api_key.as_deref()),
             config,
-            None,
         );
 
         // ── Wire MCP tools (non-fatal) ─────────────────────────────
@@ -487,7 +473,7 @@ impl Agent {
             }
         }
 
-        let provider_name = config.providers.fallback.as_deref().unwrap_or("openrouter");
+        let provider_name = config.providers.fallback.as_deref().unwrap_or("openai");
 
         let model_name = fallback_provider_ag
             .and_then(|e| e.model.as_deref())
@@ -1331,7 +1317,7 @@ pub async fn run(
         .providers
         .fallback
         .as_deref()
-        .unwrap_or("openrouter")
+        .unwrap_or("openai")
         .to_string();
     let model_name = effective_config
         .providers

@@ -195,25 +195,25 @@ mod tests {
     fn log_observer_all_events_no_panic() {
         let obs = LogObserver::new();
         obs.record_event(&ObserverEvent::AgentStart {
-            provider: "openrouter".into(),
+            provider: "openai".into(),
             model: "claude-sonnet".into(),
         });
         obs.record_event(&ObserverEvent::AgentEnd {
-            provider: "openrouter".into(),
+            provider: "openai".into(),
             model: "claude-sonnet".into(),
             duration: Duration::from_millis(500),
             tokens_used: Some(100),
             cost_usd: Some(0.0015),
         });
         obs.record_event(&ObserverEvent::AgentEnd {
-            provider: "openrouter".into(),
+            provider: "openai".into(),
             model: "claude-sonnet".into(),
             duration: Duration::ZERO,
             tokens_used: None,
             cost_usd: None,
         });
         obs.record_event(&ObserverEvent::LlmResponse {
-            provider: "openrouter".into(),
+            provider: "openai".into(),
             model: "claude-sonnet".into(),
             duration: Duration::from_millis(150),
             success: true,
@@ -222,7 +222,7 @@ mod tests {
             output_tokens: Some(50),
         });
         obs.record_event(&ObserverEvent::LlmResponse {
-            provider: "openrouter".into(),
+            provider: "openai".into(),
             model: "claude-sonnet".into(),
             duration: Duration::from_millis(200),
             success: false,

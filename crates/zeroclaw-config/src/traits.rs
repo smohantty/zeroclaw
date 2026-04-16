@@ -65,14 +65,6 @@ pub struct PropFieldInfo {
     pub kind: PropKind,
     /// Whether this field is marked `#[secret]`
     pub is_secret: bool,
-    /// Returns valid variant names for enum fields (None for non-enum fields)
-    pub enum_variants: Option<fn() -> Vec<String>>,
-}
-
-impl PropFieldInfo {
-    pub fn is_enum(&self) -> bool {
-        self.enum_variants.is_some()
-    }
 }
 
 impl std::fmt::Debug for PropFieldInfo {

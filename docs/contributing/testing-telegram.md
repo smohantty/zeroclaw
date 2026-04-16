@@ -98,18 +98,6 @@ Pass Rate:     100%
 ✓ ALL AUTOMATED TESTS PASSED! 🎉
 ```
 
-### Step 2: Configure Telegram (if not done)
-
-```bash
-# Guided setup
-zeroclaw onboard
-
-# Or channels-only setup
-zeroclaw onboard --channels-only
-```
-
-When prompted:
-1. Select **Telegram** channel
 2. Enter your **bot token** from @BotFather
 3. Enter your **Telegram user ID** or username
 
@@ -211,8 +199,6 @@ cargo update
 # Check config
 cat ~/.zeroclaw/config.toml | grep -A 5 telegram
 
-# Reconfigure
-zeroclaw onboard --channels-only
 ```
 
 ### Issue: Health check fails

@@ -35,7 +35,7 @@ Configure fallback chains in `config.toml`:
 
 ```toml
 [reliability]
-fallback_providers = ["anthropic", "groq", "openrouter"]
+fallback_providers = ["anthropic", "groq"]
 provider_retries = 2
 provider_backoff_ms = 500
 ```
@@ -109,7 +109,6 @@ For detailed setup guidance, see [Multi-Model Setup and Fallback Chains](/docs/g
 
 | Canonical ID | Aliases | Local | Provider-specific env var(s) |
 |---|---|---:|---|
-| `openrouter` | — | No | `OPENROUTER_API_KEY` |
 | `anthropic` | — | No | `ANTHROPIC_OAUTH_TOKEN`, `ANTHROPIC_API_KEY` |
 | `openai` | — | No | `OPENAI_API_KEY` |
 | `ollama` | — | Yes | `OLLAMA_API_KEY` (optional) |
@@ -122,10 +121,7 @@ For detailed setup guidance, see [Multi-Model Setup and Fallback Chains](/docs/g
 | `synthetic` | — | No | `SYNTHETIC_API_KEY` |
 | `opencode` | `opencode-zen` | No | `OPENCODE_API_KEY` |
 | `opencode-go` | — | No | `OPENCODE_GO_API_KEY` |
-| `zai` | `z.ai` | No | `ZAI_API_KEY` |
-| `glm` | `zhipu` | No | `GLM_API_KEY` |
 | `minimax` | `minimax-intl`, `minimax-io`, `minimax-global`, `minimax-cn`, `minimaxi`, `minimax-oauth`, `minimax-oauth-cn`, `minimax-portal`, `minimax-portal-cn` | No | `MINIMAX_OAUTH_TOKEN`, `MINIMAX_API_KEY` |
-| `bedrock` | `aws-bedrock` | No | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` (optional: `AWS_REGION`) |
 | `qianfan` | `baidu` | No | `QIANFAN_API_KEY` |
 | `doubao` | `volcengine`, `ark`, `doubao-cn` | No | `ARK_API_KEY`, `DOUBAO_API_KEY` |
 | `qwen` | `dashscope`, `qwen-intl`, `dashscope-intl`, `qwen-us`, `dashscope-us`, `qwen-code`, `qwen-oauth`, `qwen_oauth` | No | `QWEN_OAUTH_TOKEN`, `DASHSCOPE_API_KEY` |
@@ -138,7 +134,6 @@ For detailed setup guidance, see [Multi-Model Setup and Fallback Chains](/docs/g
 | `novita` | — | No | `NOVITA_API_KEY` |
 | `perplexity` | — | No | `PERPLEXITY_API_KEY` |
 | `cohere` | — | No | `COHERE_API_KEY` |
-| `copilot` | `github-copilot` | No | (use config/`API_KEY` fallback with GitHub token) |
 | `lmstudio` | `lm-studio` | Yes | (optional; local by default) |
 | `llamacpp` | `llama.cpp` | Yes | `LLAMACPP_API_KEY` (optional; only if server auth is enabled) |
 | `sglang` | — | Yes | `SGLANG_API_KEY` (optional) |
@@ -183,7 +178,6 @@ For detailed setup guidance, see [Multi-Model Setup and Fallback Chains](/docs/g
 - Provider ID: `llamacpp` (alias: `llama.cpp`)
 - Default endpoint: `http://localhost:8080/v1`
 - API key is optional by default; set `LLAMACPP_API_KEY` only when `llama-server` is started with `--api-key`.
-- Model discovery: `zeroclaw models refresh --provider llamacpp`
 
 ### SGLang Server Notes
 
@@ -191,36 +185,22 @@ For detailed setup guidance, see [Multi-Model Setup and Fallback Chains](/docs/g
 - Default endpoint: `http://localhost:30000/v1`
 - API key is optional by default; set `SGLANG_API_KEY` only when the server requires authentication.
 - Tool calling requires launching SGLang with `--tool-call-parser` (e.g. `hermes`, `llama3`, `qwen25`).
-- Model discovery: `zeroclaw models refresh --provider sglang`
 
 ### vLLM Server Notes
 
 - Provider ID: `vllm`
 - Default endpoint: `http://localhost:8000/v1`
 - API key is optional by default; set `VLLM_API_KEY` only when the server requires authentication.
-- Model discovery: `zeroclaw models refresh --provider vllm`
 
 ### Osaurus Server Notes
 
 - Provider ID: `osaurus`
 - Default endpoint: `http://localhost:1337/v1`
 - API key defaults to `"osaurus"` but is optional; set `OSAURUS_API_KEY` to override or leave unset for keyless access.
-- Model discovery: `zeroclaw models refresh --provider osaurus`
 - [Osaurus](https://github.com/dinoki-ai/osaurus) is a unified AI edge runtime for macOS (Apple Silicon) that combines local MLX inference with cloud provider proxying through a single endpoint.
 - Supports multiple API formats simultaneously: OpenAI-compatible (`/v1/chat/completions`), Anthropic (`/messages`), Ollama (`/chat`), and Open Responses (`/v1/responses`).
 - Built-in MCP (Model Context Protocol) support for tool and context server connectivity.
 - Local models run via MLX (Llama, Qwen, Gemma, GLM, Phi, Nemotron, and others); cloud models are proxied transparently.
-
-### Bedrock Notes
-
-- Provider ID: `bedrock` (alias: `aws-bedrock`)
-- API: [Converse API](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html)
-- Authentication: AWS AKSK (not a single API key). Set `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` environment variables.
-- Optional: `AWS_SESSION_TOKEN` for temporary/STS credentials, `AWS_REGION` or `AWS_DEFAULT_REGION` (default: `us-east-1`).
-- Default onboarding model: `anthropic.claude-sonnet-4-5-20250929-v1:0`
-- Supports native tool calling and prompt caching (`cachePoint`).
-- Cross-region inference profiles supported (e.g., `us.anthropic.claude-*`).
-- Model IDs use Bedrock format: `anthropic.claude-sonnet-4-6`, `anthropic.claude-opus-4-6-v1`, etc.
 
 ### Ollama Reasoning Toggle
 
@@ -241,7 +221,6 @@ Behavior:
 
 - Provider ID: `kimi-code`
 - Endpoint: `https://api.kimi.com/coding/v1`
-- Default onboarding model: `kimi-for-coding` (alternative: `kimi-k2.5`)
 - Runtime auto-adds `User-Agent: KimiCLI/0.77` for compatibility.
 
 ### NVIDIA NIM Notes
@@ -249,7 +228,6 @@ Behavior:
 - Canonical provider ID: `nvidia`
 - Aliases: `nvidia-nim`, `build.nvidia.com`
 - Base API URL: `https://integrate.api.nvidia.com/v1`
-- Model discovery: `zeroclaw models refresh --provider nvidia`
 
 Recommended starter model IDs (verified against NVIDIA API catalog on February 18, 2026):
 
@@ -326,8 +304,8 @@ You can route model calls by hint using `[[model_routes]]`:
 ```toml
 [[model_routes]]
 hint = "reasoning"
-provider = "openrouter"
-model = "anthropic/claude-opus-4-20250514"
+provider = "openai"
+model = "gpt-5.2"
 
 [[model_routes]]
 hint = "fast"

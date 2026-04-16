@@ -25,7 +25,7 @@ When a provider experiences a transient error (timeout, connection failure, auth
 
 ```toml
 [reliability]
-fallback_providers = ["anthropic", "groq", "openrouter"]
+fallback_providers = ["anthropic", "groq"]
 ```
 
 When the primary provider recovers, ZeroClaw resumes using it (no sticky failover).
@@ -100,7 +100,7 @@ default_model = "gpt-4o"
 api_key = "sk-openai-primary"
 
 [reliability]
-fallback_providers = ["anthropic", "groq", "openrouter"]
+fallback_providers = ["anthropic", "groq"]
 api_keys = ["sk-openai-backup-1", "sk-openai-backup-2"]
 
 [reliability.model_fallbacks]
@@ -112,7 +112,7 @@ api_keys = ["sk-openai-backup-1", "sk-openai-backup-2"]
 1. Try OpenAI `gpt-4o` with primary key (2 retries)
 2. On rate-limit, rotate to backup API keys
 3. If OpenAI still fails, fall back to Anthropic with same model request (Anthropic will select available equivalent)
-4. If Anthropic unavailable, try Groq, then OpenRouter
+4. If Anthropic unavailable, try Groq
 5. If model not available, try fallback models in order
 
 ### Local Development with Cloud Fallback
@@ -125,10 +125,10 @@ default_model = "llama2:70b"
 api_url = "http://localhost:11434"
 
 [reliability]
-fallback_providers = ["openrouter", "groq"]
+fallback_providers = ["openai", "groq"]
 ```
 
-**Behavior**: If Ollama goes down or times out, automatically use OpenRouter or Groq instead without configuration changes.
+**Behavior**: If Ollama goes down or times out, automatically use OpenAI or Groq instead without configuration changes.
 
 ### Cost Optimization: Heavy Model with Fast Fallback
 
@@ -154,8 +154,6 @@ default_provider = "anthropic"
 default_model = "claude-sonnet-4-20250514"
 
 [reliability]
-# Fall back to EU region provider if US Anthropic is down
-fallback_providers = ["bedrock"]  # AWS Bedrock in multiple regions
 provider_retries = 3
 provider_backoff_ms = 1000
 ```

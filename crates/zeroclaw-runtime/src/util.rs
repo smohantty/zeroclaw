@@ -3,7 +3,7 @@
 //! This module contains reusable helper functions used across the codebase.
 
 /// Allowed serial device path prefixes — reject arbitrary paths for security.
-/// Used by hardware serial transport and peripherals.
+/// Used by serial path validation.
 const SERIAL_ALLOWED_PATH_PREFIXES: &[&str] = &[
     "/dev/ttyACM",
     "/dev/ttyUSB",

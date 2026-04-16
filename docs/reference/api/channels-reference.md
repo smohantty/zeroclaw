@@ -11,7 +11,6 @@ For encrypted Matrix rooms, also read the dedicated runbook:
 - Need a no-response diagnosis flow: jump to [Troubleshooting Checklist](#6-troubleshooting-checklist).
 - Need Matrix encrypted-room help: use [Matrix E2EE Guide](../../security/matrix-e2ee-guide.md).
 - Need Nextcloud Talk bot setup: use [Nextcloud Talk Setup](../../setup-guides/nextcloud-talk-setup.md).
-- Need deployment/network assumptions (polling vs webhook): use [Network Deployment](../../ops/network-deployment.md).
 
 ## FAQ: Matrix setup passes but no reply
 
@@ -51,7 +50,6 @@ Notes:
 
 - Switching provider or model clears only that sender's in-memory conversation history to avoid cross-model context contamination.
 - `/new` clears the sender's conversation history without changing provider or model selection.
-- Model cache previews come from `zeroclaw models refresh --provider <ID>`.
 - These are runtime chat commands, not CLI subcommands.
 
 ## Inbound Image Marker Protocol
@@ -77,22 +75,16 @@ Operational notes:
 Matrix and Lark support are controlled at compile time.
 
 - Default builds are lean (`default = []`) and do not include Matrix/Lark.
-- Typical local check with only hardware support:
-
-```bash
-cargo check --features hardware
-```
-
 - Enable Matrix explicitly when needed:
 
 ```bash
-cargo check --features hardware,channel-matrix
+cargo check --features channel-matrix
 ```
 
 - Enable Lark explicitly when needed:
 
 ```bash
-cargo check --features hardware,channel-lark
+cargo check --features channel-lark
 ```
 
 If `[channels_config.matrix]`, `[channels_config.lark]`, or `[channels_config.feishu]` is present but the corresponding feature is not compiled in, `zeroclaw channel list`, `zeroclaw channel doctor`, and `zeroclaw channel start` will report that the channel is intentionally skipped for this build.
@@ -380,18 +372,6 @@ Nostr supports both NIP-04 (legacy encrypted DMs) and NIP-17 (gift-wrapped priva
 Replies automatically use the same protocol the sender used. The private key is encrypted at rest
 via the `SecretStore` when `secrets.encrypt = true` (the default).
 
-Guided onboarding support:
-
-```bash
-zeroclaw onboard
-```
-
-The wizard now includes dedicated **Lark** and **Feishu** steps with:
-
-- credential verification against official Open Platform auth endpoint
-- receive mode selection (`websocket` or `webhook`)
-- optional webhook verification token prompt (recommended for stronger callback authenticity checks)
-
 Runtime token behavior:
 
 - `tenant_access_token` is cached with a refresh deadline based on `expire`/`expires_in` from the auth response.
@@ -469,7 +449,6 @@ allowed_contacts = ["*"]
 2. Run:
 
 ```bash
-zeroclaw onboard --channels-only
 zeroclaw daemon
 ```
 

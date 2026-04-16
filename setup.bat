@@ -67,15 +67,6 @@ if %ERRORLEVEL% NEQ 0 (
     echo   %GREEN%OK%RESET% Rust !RUST_VER! found
 )
 
-:: Check Node.js (optional)
-where node >nul 2>&1
-if %ERRORLEVEL% NEQ 0 (
-    echo   %YELLOW%Node.js not found (optional - web dashboard will use stub).%RESET%
-) else (
-    for /f "tokens=1" %%v in ('node --version 2^>nul') do set "NODE_VER=%%v"
-    echo   %GREEN%OK%RESET% Node.js !NODE_VER! found
-)
-
 :: Check Git
 where git >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
@@ -316,7 +307,6 @@ echo Prerequisites:
 echo   - Git (required)
 echo   - Rust 1.87+ (auto-installed if missing)
 echo   - Visual Studio Build Tools with C++ workload (for source builds)
-echo   - Node.js (optional, for web dashboard)
 echo.
 goto :end
 

@@ -12,14 +12,12 @@
 //! - [`memory_traits::Memory`] — conversation memory backends
 //! - [`observability_traits::Observer`] — metrics and tracing
 //! - [`runtime_traits::RuntimeAdapter`] — execution environment adapters
-//! - [`peripherals_traits::Peripheral`] — hardware board integrations
 
 pub mod agent;
 pub mod channel;
 pub mod media;
 pub mod memory_traits;
 pub mod observability_traits;
-pub mod peripherals_traits;
 pub mod provider;
 pub mod runtime_traits;
 pub mod schema;

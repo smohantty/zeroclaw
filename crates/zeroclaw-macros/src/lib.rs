@@ -402,28 +402,6 @@ pub fn derive_configurable(input: TokenStream) -> TokenStream {
         // All field types must implement HasPropKind — scalars in traits.rs,
         // config enums in schema.rs via impl_enum_prop_kind!.
         let kind_token = quote! { <#inner_ty as crate::config::HasPropKind>::PROP_KIND };
-        let enum_variants_expr = quote! {
-            {
-                #[cfg(feature = "schema-export")]
-                {
-                    if <#inner_ty as crate::config::HasPropKind>::PROP_KIND == crate::config::PropKind::Enum {
-                        Some(|| {
-                            crate::config::enum_variants::<#inner_ty>()
-                                .split(", ")
-                                .map(|s| s.to_string())
-                                .collect()
-                        })
-                    } else {
-                        None
-                    }
-                }
-                #[cfg(not(feature = "schema-export"))]
-                {
-                    None::<fn() -> Vec<String>>
-                }
-            }
-        };
-
         if is_secret {
             prop_is_secret_arms.push(quote! { #full_name_lit => true, });
         }
@@ -441,7 +419,6 @@ pub fn derive_configurable(input: TokenStream) -> TokenStream {
                 #type_hint_lit,
                 #kind_token,
                 #is_secret,
-                #enum_variants_expr,
             )
         });
     }

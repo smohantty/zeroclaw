@@ -1160,7 +1160,7 @@ pub fn parse_tool_calls(response: &str) -> (String, Vec<ParsedToolCall>) {
     }
 
     // If XML tags found nothing, try markdown code blocks with tool_call language.
-    // Models behind OpenRouter sometimes output ```tool_call ... ``` or hybrid
+    // Some models output ```tool_call ... ``` or hybrid
     // ```tool_call ... </tool_call> instead of structured API calls or XML tags.
     if calls.is_empty() {
         static MD_TOOL_CALL_RE: LazyLock<Regex> = LazyLock::new(|| {

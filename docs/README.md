@@ -4,8 +4,7 @@ This page is the primary entry point for the documentation system.
 
 Last refreshed: **February 21, 2026**.
 
-Localized hubs:
-[العربية](README.ar.md) · [বাংলা](README.bn.md) · [Čeština](README.cs.md) · [Dansk](README.da.md) · [Deutsch](README.de.md) · [Ελληνικά](README.el.md) · [Español](README.es.md) · [Suomi](README.fi.md) · [Français](README.fr.md) · [עברית](README.he.md) · [हिन्दी](README.hi.md) · [Magyar](README.hu.md) · [Bahasa Indonesia](README.id.md) · [Italiano](README.it.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Norsk Bokmål](README.nb.md) · [Nederlands](README.nl.md) · [Polski](README.pl.md) · [Português](README.pt.md) · [Română](README.ro.md) · [Русский](README.ru.md) · [Svenska](README.sv.md) · [ไทย](README.th.md) · [Tagalog](README.tl.md) · [Türkçe](README.tr.md) · [Українська](README.uk.md) · [اردو](README.ur.md) · [Tiếng Việt](README.vi.md) · [简体中文](README.zh-CN.md).
+Localized hub: [한국어](i18n/ko/README.md).
 
 ## Start Here
 
@@ -17,7 +16,6 @@ Localized hubs:
 | Find commands by task | [commands-reference.md](reference/cli/commands-reference.md) |
 | Check config defaults and keys quickly | [config-reference.md](reference/api/config-reference.md) |
 | Configure custom providers/endpoints | [custom-providers.md](contributing/custom-providers.md) |
-| Configure Z.AI / GLM provider | [zai-glm-setup.md](setup-guides/zai-glm-setup.md) |
 | Use LangGraph integration patterns | [langgraph-integration.md](contributing/langgraph-integration.md) |
 | Operate runtime (day-2 runbook) | [operations-runbook.md](ops/operations-runbook.md) |
 | Troubleshoot install/runtime/channel issues | [troubleshooting.md](ops/troubleshooting.md) |
@@ -32,7 +30,6 @@ Localized hubs:
 - Need production/service operations? → [ops/README.md](ops/README.md)
 - Seeing failures or regressions? → [troubleshooting.md](ops/troubleshooting.md)
 - Working on security hardening or roadmap? → [security/README.md](security/README.md)
-- Working with boards/peripherals? → [hardware/README.md](hardware/README.md)
 - Contributing/reviewing/CI workflow? → [contributing/README.md](contributing/README.md)
 - Want the full map? → [SUMMARY.md](SUMMARY.md)
 
@@ -42,7 +39,6 @@ Localized hubs:
 - Reference catalogs: [reference/README.md](reference/README.md)
 - Operations & deployment: [ops/README.md](ops/README.md)
 - Security docs: [security/README.md](security/README.md)
-- Hardware/peripherals: [hardware/README.md](hardware/README.md)
 - Contributing/CI: [contributing/README.md](contributing/README.md)
 - Project snapshots: [maintainers/README.md](maintainers/README.md)
 
@@ -56,7 +52,6 @@ Localized hubs:
 - [matrix-e2ee-guide.md](security/matrix-e2ee-guide.md) — Matrix encrypted-room (E2EE) setup and no-response diagnostics
 - [config-reference.md](reference/api/config-reference.md) — high-signal config keys and secure defaults
 - [custom-providers.md](contributing/custom-providers.md) — custom provider/base URL integration templates
-- [zai-glm-setup.md](setup-guides/zai-glm-setup.md) — Z.AI/GLM setup and endpoint matrix
 - [langgraph-integration.md](contributing/langgraph-integration.md) — fallback integration for model/tool-calling edge cases
 - [operations-runbook.md](ops/operations-runbook.md) — day-2 runtime operations and rollback flow
 - [troubleshooting.md](ops/troubleshooting.md) — common failure signatures and recovery steps
@@ -74,9 +69,6 @@ Localized hubs:
 > Note: this area includes proposal/roadmap docs. For current behavior, start with [config-reference.md](reference/api/config-reference.md), [operations-runbook.md](ops/operations-runbook.md), and [troubleshooting.md](ops/troubleshooting.md).
 
 - [security/README.md](security/README.md)
-- [agnostic-security.md](security/agnostic-security.md)
-- [frictionless-security.md](security/frictionless-security.md)
-- [sandboxing.md](security/sandboxing.md)
 - [audit-logging.md](security/audit-logging.md)
 - [resource-limits.md](ops/resource-limits.md)
 - [security-roadmap.md](security/security-roadmap.md)

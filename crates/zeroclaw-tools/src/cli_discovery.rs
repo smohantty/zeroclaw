@@ -109,21 +109,6 @@ const KNOWN_CLIS: &[KnownCli] = &[
         category: CliCategory::Language,
     },
     KnownCli {
-        name: "claude",
-        version_args: &["--version"],
-        category: CliCategory::AiAgent,
-    },
-    KnownCli {
-        name: "gemini",
-        version_args: &["--version"],
-        category: CliCategory::AiAgent,
-    },
-    KnownCli {
-        name: "kilo",
-        version_args: &["--version"],
-        category: CliCategory::AiAgent,
-    },
-    KnownCli {
         name: "gws",
         version_args: &["--version"],
         category: CliCategory::Productivity,

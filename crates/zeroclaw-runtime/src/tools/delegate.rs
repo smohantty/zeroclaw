@@ -1295,8 +1295,8 @@ mod tests {
         agents.insert(
             "coder".to_string(),
             DelegateAgentConfig {
-                provider: "openrouter".to_string(),
-                model: "anthropic/claude-sonnet-4-20250514".to_string(),
+                provider: "openai".to_string(),
+                model: "gpt-5.2".to_string(),
                 system_prompt: None,
                 api_key: Some("delegate-test-credential".to_string()),
                 temperature: None,
@@ -1452,7 +1452,7 @@ mod tests {
 
     fn agentic_config(allowed_tools: Vec<String>, max_iterations: usize) -> DelegateAgentConfig {
         DelegateAgentConfig {
-            provider: "openrouter".to_string(),
+            provider: "openai".to_string(),
             model: "model-test".to_string(),
             system_prompt: Some("You are agentic.".to_string()),
             api_key: Some("delegate-test-credential".to_string()),
@@ -1838,7 +1838,7 @@ mod tests {
             .unwrap();
 
         assert!(result.success);
-        assert!(result.output.contains("(openrouter/model-test, agentic)"));
+        assert!(result.output.contains("(openai/model-test, agentic)"));
         assert!(result.output.contains("done"));
     }
 
@@ -2012,7 +2012,7 @@ mod tests {
     #[test]
     fn enriched_prompt_includes_tools_workspace_datetime() {
         let config = DelegateAgentConfig {
-            provider: "openrouter".to_string(),
+            provider: "openai".to_string(),
             model: "test-model".to_string(),
             system_prompt: Some("You are a code reviewer.".to_string()),
             api_key: None,
@@ -2066,7 +2066,7 @@ mod tests {
     #[test]
     fn enriched_prompt_includes_shell_policy_when_shell_present() {
         let config = DelegateAgentConfig {
-            provider: "openrouter".to_string(),
+            provider: "openai".to_string(),
             model: "test-model".to_string(),
             system_prompt: None,
             api_key: None,
@@ -2166,7 +2166,7 @@ mod tests {
     #[test]
     fn enriched_prompt_omits_shell_policy_without_shell_tool() {
         let config = DelegateAgentConfig {
-            provider: "openrouter".to_string(),
+            provider: "openai".to_string(),
             model: "test-model".to_string(),
             system_prompt: None,
             api_key: None,
@@ -2425,7 +2425,7 @@ mod tests {
         .unwrap();
 
         let config = DelegateAgentConfig {
-            provider: "openrouter".to_string(),
+            provider: "openai".to_string(),
             model: "test-model".to_string(),
             system_prompt: None,
             api_key: None,
@@ -2472,7 +2472,7 @@ mod tests {
         .unwrap();
 
         let config = DelegateAgentConfig {
-            provider: "openrouter".to_string(),
+            provider: "openai".to_string(),
             model: "test-model".to_string(),
             system_prompt: None,
             api_key: None,

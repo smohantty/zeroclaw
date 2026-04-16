@@ -12,23 +12,6 @@ pub fn register_cli_channel_fn(
     let _ = CLI_CHANNEL_FN.set(f);
 }
 
-/// Peripheral tools factory type — takes owned config so the returned future is 'static.
-pub type PeripheralToolsFn = Box<
-    dyn Fn(
-            zeroclaw_config::schema::PeripheralsConfig,
-        ) -> std::pin::Pin<
-            Box<dyn std::future::Future<Output = anyhow::Result<Vec<Box<dyn Tool>>>> + Send>,
-        > + Send
-        + Sync,
->;
-
-/// Peripheral tools factory, injected by the binary when hardware feature is on.
-static PERIPHERAL_TOOLS_FN: std::sync::OnceLock<PeripheralToolsFn> = std::sync::OnceLock::new();
-
-/// Register the peripheral tools factory. Called once at startup by the binary.
-pub fn register_peripheral_tools_fn(f: PeripheralToolsFn) {
-    let _ = PERIPHERAL_TOOLS_FN.set(f);
-}
 use crate::cost::types::BudgetCheck;
 use crate::i18n::ToolDescriptions;
 use crate::observability::{self, Observer, ObserverEvent, runtime_trace};
@@ -372,46 +355,6 @@ async fn build_context(
     context
 }
 
-/// Build hardware datasheet context from RAG when peripherals are enabled.
-/// Includes pin-alias lookup (e.g. "red_led" → 13) when query matches, plus retrieved chunks.
-fn build_hardware_context(
-    rag: &crate::rag::HardwareRag,
-    user_msg: &str,
-    boards: &[String],
-    chunk_limit: usize,
-) -> String {
-    if rag.is_empty() || boards.is_empty() {
-        return String::new();
-    }
-
-    let mut context = String::new();
-
-    // Pin aliases: when user says "red led", inject "red_led: 13" for matching boards
-    let pin_ctx = rag.pin_alias_context(user_msg, boards);
-    if !pin_ctx.is_empty() {
-        context.push_str(&pin_ctx);
-    }
-
-    let chunks = rag.retrieve(user_msg, boards, chunk_limit);
-    if chunks.is_empty() && pin_ctx.is_empty() {
-        return String::new();
-    }
-
-    if !chunks.is_empty() {
-        context.push_str("[Hardware documentation]\n");
-    }
-    for chunk in chunks {
-        let board_tag = chunk.board.as_deref().unwrap_or("generic");
-        let _ = writeln!(
-            context,
-            "--- {} ({}) ---\n{}\n",
-            chunk.source, board_tag, chunk.content
-        );
-    }
-    context.push('\n');
-    context
-}
-
 // Tool execution moved to `super::tool_execution`.
 pub use super::tool_execution::{
     ToolExecutionOutcome, execute_tools_parallel, execute_tools_sequential,
@@ -419,7 +362,7 @@ pub use super::tool_execution::{
 };
 
 /// Build assistant history entry in JSON format for native tool-call APIs.
-/// `convert_messages` in the OpenRouter provider parses this JSON to reconstruct
+/// Native provider adapters parse this JSON to reconstruct
 /// the proper `NativeMessage` with structured `tool_calls`.
 fn build_native_assistant_history(
     text: &str,
@@ -1031,7 +974,7 @@ pub async fn run_tool_call_loop(
         }
 
         // Unified path via Provider::chat so provider-specific native tool logic
-        // (OpenAI/Anthropic/OpenRouter/compatible adapters) is honored.
+        // (OpenAI/Anthropic/compatible adapters) is honored.
         let request_tools = if use_native_tools {
             Some(tool_specs.as_slice())
         } else {
@@ -1962,7 +1905,7 @@ pub fn build_tool_instructions(
 
 // ── CLI Entrypoint ───────────────────────────────────────────────────────
 // Wires up all subsystems (observer, runtime, security, memory, tools,
-// provider, hardware RAG, peripherals) and enters either single-shot or
+// provider and tool registry) and enters either single-shot or
 // interactive REPL mode. The interactive loop manages history compaction
 // and hard trimming to keep the context window bounded.
 
@@ -1973,7 +1916,6 @@ pub async fn run(
     provider_override: Option<String>,
     model_override: Option<String>,
     temperature: f64,
-    peripheral_overrides: Vec<String>,
     interactive: bool,
     session_state_file: Option<PathBuf>,
     allowed_tools: Option<Vec<String>>,
@@ -2000,23 +1942,7 @@ pub async fn run(
     )?);
     tracing::info!(backend = mem.name(), "Memory initialized");
 
-    // ── Peripherals (merge peripheral tools into registry) ─
-    if !peripheral_overrides.is_empty() {
-        tracing::info!(
-            peripherals = ?peripheral_overrides,
-            "Peripheral overrides from CLI (config boards take precedence)"
-        );
-    }
-
-    // ── Tools (including memory tools and peripherals) ────────────
-    let (composio_key, composio_entity_id) = if config.composio.enabled {
-        (
-            config.composio.api_key.as_deref(),
-            Some(config.composio.entity_id.as_str()),
-        )
-    } else {
-        (None, None)
-    };
+    // ── Tools ────────────────────────────────────────────────────
     let (
         mut tools_registry,
         delegate_handle,
@@ -2029,8 +1955,6 @@ pub async fn run(
         &security,
         runtime,
         mem.clone(),
-        composio_key,
-        composio_entity_id,
         &config.browser,
         &config.http_request,
         &config.web_fetch,
@@ -2038,18 +1962,7 @@ pub async fn run(
         &config.agents,
         fallback_provider_loop.and_then(|e| e.api_key.as_deref()),
         &config,
-        None,
     );
-
-    let peripheral_tools: Vec<Box<dyn Tool>> = if let Some(f) = PERIPHERAL_TOOLS_FN.get() {
-        f(config.peripherals.clone()).await.unwrap_or_default()
-    } else {
-        vec![]
-    };
-    if !peripheral_tools.is_empty() {
-        tracing::info!(count = peripheral_tools.len(), "Peripheral tools added");
-        tools_registry.extend(peripheral_tools);
-    }
 
     // ── Capability-based tool access control ─────────────────────
     // When `allowed_tools` is `Some(list)`, restrict the tool registry to only
@@ -2142,7 +2055,7 @@ pub async fn run(
     let mut provider_name = provider_override
         .as_deref()
         .or(config.providers.fallback.as_deref())
-        .unwrap_or("openrouter")
+        .unwrap_or("openai")
         .to_string();
 
     let mut model_name = model_override
@@ -2170,26 +2083,6 @@ pub async fn run(
         provider: provider_name.to_string(),
         model: model_name.to_string(),
     });
-
-    // ── Hardware RAG (datasheet retrieval when peripherals + datasheet_dir) ──
-    let hardware_rag: Option<crate::rag::HardwareRag> = config
-        .peripherals
-        .datasheet_dir
-        .as_ref()
-        .filter(|d| !d.trim().is_empty())
-        .map(|dir| crate::rag::HardwareRag::load(&config.workspace_dir, dir.trim()))
-        .and_then(Result::ok)
-        .filter(|r: &crate::rag::HardwareRag| !r.is_empty());
-    if let Some(ref rag) = hardware_rag {
-        tracing::info!(chunks = rag.len(), "Hardware RAG loaded");
-    }
-
-    let board_names: Vec<String> = config
-        .peripherals
-        .boards
-        .iter()
-        .map(|b| b.board.clone())
-        .collect();
 
     // ── Load locale-aware tool descriptions ────────────────────────
     let i18n_locale = config
@@ -2275,12 +2168,6 @@ pub async fn run(
             "Open approved HTTPS URLs in system browser (allowlist-only, no scraping)",
         ));
     }
-    if config.composio.enabled {
-        tool_descs.push((
-            "composio",
-            "Execute actions on 1000+ apps via Composio (Gmail, Notion, GitHub, Slack, etc.). Use action='list' to discover, 'execute' to run (optionally with connected_account_id), 'connect' to OAuth.",
-        ));
-    }
     tool_descs.push((
         "schedule",
         "Manage scheduled tasks (create/list/get/cancel/pause/resume). Supports recurring cron and one-shot delays.",
@@ -2293,36 +2180,6 @@ pub async fn run(
         tool_descs.push((
             "delegate",
             "Delegate a sub-task to a specialized agent. Use when: task needs different model/capability, or to parallelize work.",
-        ));
-    }
-    if config.peripherals.enabled && !config.peripherals.boards.is_empty() {
-        tool_descs.push((
-            "gpio_read",
-            "Read GPIO pin value (0 or 1) on connected hardware (STM32, Arduino). Use when: checking sensor/button state, LED status.",
-        ));
-        tool_descs.push((
-            "gpio_write",
-            "Set GPIO pin high (1) or low (0) on connected hardware. Use when: turning LED on/off, controlling actuators.",
-        ));
-        tool_descs.push((
-            "arduino_upload",
-            "Upload agent-generated Arduino sketch. Use when: user asks for 'make a heart', 'blink pattern', or custom LED behavior on Arduino. You write the full .ino code; ZeroClaw compiles and uploads it. Pin 13 = built-in LED on Uno.",
-        ));
-        tool_descs.push((
-            "hardware_memory_map",
-            "Return flash and RAM address ranges for connected hardware. Use when: user asks for 'upper and lower memory addresses', 'memory map', or 'readable addresses'.",
-        ));
-        tool_descs.push((
-            "hardware_board_info",
-            "Return full board info (chip, architecture, memory map) for connected hardware. Use when: user asks for 'board info', 'what board do I have', 'connected hardware', 'chip info', or 'what hardware'.",
-        ));
-        tool_descs.push((
-            "hardware_memory_read",
-            "Read actual memory/register values from Nucleo via USB. Use when: user asks to 'read register values', 'read memory', 'dump lower memory 0-126', 'give address and value'. Params: address (hex, default 0x20000000), length (bytes, default 128).",
-        ));
-        tool_descs.push((
-            "hardware_capabilities",
-            "Query connected hardware for reported GPIO pins and LED pin. Use when: user asks what pins are available.",
         ));
     }
     let bootstrap_max_chars = if config.agent.compact_context {
@@ -2429,7 +2286,7 @@ pub async fn run(
                 .await;
         }
 
-        // Inject memory + hardware RAG context into user message
+        // Inject memory context into user message
         let mem_context = build_context(
             mem.as_ref(),
             &effective_msg,
@@ -2437,12 +2294,7 @@ pub async fn run(
             memory_session_id.as_deref(),
         )
         .await;
-        let rag_limit = if config.agent.compact_context { 2 } else { 5 };
-        let hw_context = hardware_rag
-            .as_ref()
-            .map(|r| build_hardware_context(r, &effective_msg, &board_names, rag_limit))
-            .unwrap_or_default();
-        let context = format!("{mem_context}{hw_context}");
+        let context = mem_context;
         let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S %Z");
         let enriched = if context.is_empty() {
             format!("[{now}] {effective_msg}")
@@ -2713,7 +2565,7 @@ pub async fn run(
                     .await;
             }
 
-            // Inject memory + hardware RAG context into user message
+            // Inject memory context into user message
             let mem_context = build_context(
                 mem.as_ref(),
                 &effective_input,
@@ -2721,12 +2573,7 @@ pub async fn run(
                 memory_session_id.as_deref(),
             )
             .await;
-            let rag_limit = if config.agent.compact_context { 2 } else { 5 };
-            let hw_context = hardware_rag
-                .as_ref()
-                .map(|r| build_hardware_context(r, &effective_input, &board_names, rag_limit))
-                .unwrap_or_default();
-            let context = format!("{mem_context}{hw_context}");
+            let context = mem_context;
             let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S %Z");
             let enriched = if context.is_empty() {
                 format!("[{now}] {effective_input}")
@@ -2973,8 +2820,8 @@ pub async fn run(
     Ok(final_output)
 }
 
-/// Process a single message through the full agent (with tools, peripherals, memory).
-/// Used by channels (Telegram, Discord, etc.) to enable hardware and tool use.
+/// Process a single message through the full agent (with tools and memory).
+/// Used by channels (Telegram, Discord, etc.) to enable agent tool use.
 pub async fn process_message(
     config: Config,
     message: &str,
@@ -2998,14 +2845,6 @@ pub async fn process_message(
         fallback_provider_pm.and_then(|e| e.api_key.as_deref()),
     )?);
 
-    let (composio_key, composio_entity_id) = if config.composio.enabled {
-        (
-            config.composio.api_key.as_deref(),
-            Some(config.composio.entity_id.as_str()),
-        )
-    } else {
-        (None, None)
-    };
     let (
         mut tools_registry,
         delegate_handle_pm,
@@ -3018,8 +2857,6 @@ pub async fn process_message(
         &security,
         runtime,
         mem.clone(),
-        composio_key,
-        composio_entity_id,
         &config.browser,
         &config.http_request,
         &config.web_fetch,
@@ -3027,15 +2864,7 @@ pub async fn process_message(
         &config.agents,
         fallback_provider_pm.and_then(|e| e.api_key.as_deref()),
         &config,
-        None,
     );
-    let peripheral_tools: Vec<Box<dyn Tool>> = if let Some(f) = PERIPHERAL_TOOLS_FN.get() {
-        f(config.peripherals.clone()).await.unwrap_or_default()
-    } else {
-        vec![]
-    };
-    tools_registry.extend(peripheral_tools);
-
     // ── Wire MCP tools (non-fatal) — process_message path ────────
     // NOTE: Same ordering contract as the CLI path above — MCP tools must be
     // injected after filter_primary_agent_tools_or_fail (or equivalent built-in
@@ -3102,7 +2931,7 @@ pub async fn process_message(
         }
     }
 
-    let provider_name = config.providers.fallback.as_deref().unwrap_or("openrouter");
+    let provider_name = config.providers.fallback.as_deref().unwrap_or("openai");
     let model_name = fallback_provider_pm
         .and_then(|e| e.model.clone())
         .unwrap_or_else(|| "anthropic/claude-sonnet-4-20250514".into());
@@ -3117,21 +2946,6 @@ pub async fn process_message(
         &model_name,
         &provider_runtime_options,
     )?;
-
-    let hardware_rag: Option<crate::rag::HardwareRag> = config
-        .peripherals
-        .datasheet_dir
-        .as_ref()
-        .filter(|d| !d.trim().is_empty())
-        .map(|dir| crate::rag::HardwareRag::load(&config.workspace_dir, dir.trim()))
-        .and_then(Result::ok)
-        .filter(|r: &crate::rag::HardwareRag| !r.is_empty());
-    let board_names: Vec<String> = config
-        .peripherals
-        .boards
-        .iter()
-        .map(|b| b.board.clone())
-        .collect();
 
     // ── Load locale-aware tool descriptions ────────────────────────
     let i18n_locale = config
@@ -3174,37 +2988,6 @@ pub async fn process_message(
     if config.browser.enabled {
         tool_descs.push(("browser_open", "Open approved URLs in browser."));
     }
-    if config.composio.enabled {
-        tool_descs.push(("composio", "Execute actions on 1000+ apps via Composio."));
-    }
-    if config.peripherals.enabled && !config.peripherals.boards.is_empty() {
-        tool_descs.push(("gpio_read", "Read GPIO pin value on connected hardware."));
-        tool_descs.push((
-            "gpio_write",
-            "Set GPIO pin high or low on connected hardware.",
-        ));
-        tool_descs.push((
-            "arduino_upload",
-            "Upload Arduino sketch. Use for 'make a heart', custom patterns. You write full .ino code; ZeroClaw uploads it.",
-        ));
-        tool_descs.push((
-            "hardware_memory_map",
-            "Return flash and RAM address ranges. Use when user asks for memory addresses or memory map.",
-        ));
-        tool_descs.push((
-            "hardware_board_info",
-            "Return full board info (chip, architecture, memory map). Use when user asks for board info, what board, connected hardware, or chip info.",
-        ));
-        tool_descs.push((
-            "hardware_memory_read",
-            "Read actual memory/register values from Nucleo. Use when user asks to read registers, read memory, dump lower memory 0-126, or give address and value.",
-        ));
-        tool_descs.push((
-            "hardware_capabilities",
-            "Query connected hardware for reported GPIO pins and LED pin. Use when user asks what pins are available.",
-        ));
-    }
-
     // Filter out tools excluded for non-CLI channels (gateway counts as non-CLI).
     // Skip when autonomy is `Full` — full-autonomy agents keep all tools.
     if config.autonomy.level != AutonomyLevel::Full {
@@ -3278,12 +3061,7 @@ pub async fn process_message(
         session_id,
     )
     .await;
-    let rag_limit = if config.agent.compact_context { 2 } else { 5 };
-    let hw_context = hardware_rag
-        .as_ref()
-        .map(|r| build_hardware_context(r, effective_msg_ref, &board_names, rag_limit))
-        .unwrap_or_default();
-    let context = format!("{mem_context}{hw_context}");
+    let context = mem_context;
     let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S %Z");
     let enriched = if context.is_empty() {
         format!("[{now}] {effective_message}")

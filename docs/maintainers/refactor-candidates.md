@@ -5,7 +5,6 @@ Largest source files in `src/`, ranked by severity. Each does multiple jobs in a
 | File | Lines | Problem |
 |---|---|---|
 | `config/schema.rs` | 7,647 | Every config struct for the entire system in one file |
-| `onboard/wizard.rs` | 7,200 | Entire onboarding flow in one function-like blob |
 | `channels/mod.rs` | 6,591 | Channel factory + shared logic + all wiring |
 | `agent/loop_.rs` | 5,599 | The entire agent orchestration loop |
 | `channels/telegram.rs` | 4,606 | One channel impl shouldn't be this big |
@@ -45,8 +44,6 @@ Rust best practice: use `.context("msg")?` or handle errors explicitly. Each unw
 Providers, pairing, and CLI routing use `panic!` instead of returning errors:
 
 ```rust
-// providers/bedrock.rs
-panic!("Expected ToolResult block");
 // security/pairing.rs
 panic!("Generated 10 pairs of codes and all were collisions — CSPRNG failure");
 ```
@@ -92,7 +89,7 @@ Auth/token refresh paths clone large structs on every branch. Hot paths like tok
 
 ### Medium: Dependency count (82 direct)
 
-The project claims size optimization as a goal (`opt-level = "z"`, `lto = "fat"`) while accumulating heavy optional deps like `matrix-sdk` (full E2EE crypto) and `probe-rs` (50+ transitive deps). The tension between size goals and feature breadth is unresolved.
+The project claims size optimization as a goal (`opt-level = "z"`, `lto = "fat"`) while accumulating heavy optional deps like `matrix-sdk` (full E2EE crypto). The tension between size goals and feature breadth is unresolved.
 
 ### Low: `unsafe` without safety comments
 
@@ -131,18 +128,6 @@ Changes deferred from the project-cleanup pass. Each entry includes rationale an
 **Why:** "SOP" is jargon-heavy and doesn't communicate what the module does. "Runbooks" is the industry-standard term for trigger-driven automated procedures with approval gates.
 
 **Scope:** Rename module (`src/sop/` → `src/runbooks/`), update config keys (`[sop]` → `[runbooks]`), CLI subcommand (`zeroclaw sop` → `zeroclaw runbook`), all internal types (`Sop*` → `Runbook*`), docs (`docs/sop/` → matching new structure), and references in CLAUDE.md.
-
-### Consolidate i18n docs into `docs/i18n/<locale>/`
-
-**Why:** Vietnamese translations currently exist in three places: `docs/i18n/vi/` (canonical per CLAUDE.md), `docs/vi/` (stale duplicate with 17 files diverged), and `docs/*.vi.md` (5 scattered suffix files). Other locales (zh-CN, ja, ru, fr) have SUMMARY + README files scattered in `docs/` root.
-
-**Plan:**
-- Keep `docs/i18n/vi/` as canonical; delete `docs/vi/` (stale duplicate)
-- Move `docs/*.vi.md` files into `docs/i18n/vi/` at matching paths
-- Move `docs/SUMMARY.*.md` and `docs/README.*.md` into `docs/i18n/<locale>/`
-- Create `docs/i18n/{zh-CN,ja,ru,fr}/` directories with their README + SUMMARY
-- Root `README.*.md` files stay (GitHub convention)
-- Update `docs/i18n/vi/` internal structure to mirror the new English docs layout after the English restructure lands
 
 ### TODO: Fuzz testing — upgrade stubs to real coverage
 

@@ -139,7 +139,6 @@ impl std::fmt::Debug for ResolvedEmbeddingConfig {
 fn embedding_provider_env_key(provider: &str) -> Option<String> {
     let env_var = match provider.trim() {
         "openai" => "OPENAI_API_KEY",
-        "openrouter" => "OPENROUTER_API_KEY",
         "cohere" => "COHERE_API_KEY",
         _ => return None,
     };

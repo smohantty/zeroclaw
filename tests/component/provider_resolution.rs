@@ -90,11 +90,6 @@ fn factory_kimi_alias_resolves_to_moonshot() {
     assert_provider_ok("kimi", Some("test-key"), None);
 }
 
-#[test]
-fn factory_zhipu_alias_resolves_to_glm() {
-    assert_provider_ok("zhipu", Some("test-key"), None);
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Custom URL provider creation
 // ─────────────────────────────────────────────────────────────────────────────
@@ -250,23 +245,8 @@ fn convenience_factory_ollama_no_key() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[test]
-fn factory_resolves_openrouter_provider() {
-    assert_provider_ok("openrouter", Some("test-key"), None);
-}
-
-#[test]
 fn factory_resolves_gemini_provider() {
     assert_provider_ok("gemini", Some("test-key"), None);
-}
-
-#[test]
-fn factory_resolves_bedrock_provider() {
-    assert_provider_ok("bedrock", None, None);
-}
-
-#[test]
-fn factory_resolves_copilot_provider() {
-    assert_provider_ok("copilot", Some("test-key"), None);
 }
 
 #[test]
@@ -324,11 +304,6 @@ fn factory_resolves_moonshot_provider() {
 }
 
 #[test]
-fn factory_resolves_glm_provider() {
-    assert_provider_ok("glm", Some("test-key"), None);
-}
-
-#[test]
 fn factory_resolves_qwen_provider() {
     assert_provider_ok("qwen", Some("test-key"), None);
 }
@@ -351,11 +326,6 @@ fn factory_resolves_minimax_provider() {
 #[test]
 fn factory_resolves_kimi_code_provider() {
     assert_provider_ok("kimi-code", Some("test-key"), None);
-}
-
-#[test]
-fn factory_resolves_zai_provider() {
-    assert_provider_ok("zai", Some("test-key"), None);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -413,16 +383,6 @@ fn factory_google_alias_resolves_to_gemini() {
 #[test]
 fn factory_google_gemini_alias_resolves_to_gemini() {
     assert_provider_ok("google-gemini", Some("test-key"), None);
-}
-
-#[test]
-fn factory_aws_bedrock_alias_resolves_to_bedrock() {
-    assert_provider_ok("aws-bedrock", None, None);
-}
-
-#[test]
-fn factory_github_copilot_alias_resolves_to_copilot() {
-    assert_provider_ok("github-copilot", Some("test-key"), None);
 }
 
 #[test]

@@ -1,6 +1,6 @@
 # ZeroClaw Repository Map
 
-ZeroClaw is a Rust-first autonomous agent runtime. It receives messages from messaging platforms, routes them through an LLM, executes tool calls, persists memory, and returns responses. It can also control hardware peripherals and run as a long-lived daemon.
+ZeroClaw is a Rust-first autonomous agent runtime. It receives messages from messaging platforms, routes them through an LLM, executes tool calls, persists memory, and returns responses as a long-lived daemon.
 
 ## Runtime Flow
 
@@ -40,12 +40,9 @@ User message (Telegram/Discord/Slack/...)
 ```
 zeroclaw/
 ├── src/                  # Rust source (the runtime)
-├── crates/robot-kit/     # Separate crate for hardware robot kit
 ├── tests/                # Integration/E2E tests
 ├── benches/              # Benchmarks (agent loop)
 ├── docs/contributing/extension-examples.md  # Extension examples (custom provider/channel/tool/memory)
-├── firmware/             # Embedded firmware for Arduino, ESP32, Nucleo boards
-├── web/                  # Web UI (Vite + TypeScript)
 ├── dev/                  # Local dev tooling (Docker, CI scripts, sandbox)
 ├── scripts/              # CI scripts, release automation, bootstrap
 ├── docs/                 # Documentation system (multilingual, runtime refs)
@@ -83,7 +80,7 @@ zeroclaw/
 |---|---|---|
 | `providers/` | `traits.rs`, `mod.rs` (2.9k), `reliable.rs`, `router.rs`, + 11 provider files | **LLM integrations.** `Provider` trait: `chat()`, `chat_with_system()`, `capabilities()`, `convert_tools()`. Factory in `mod.rs` creates providers by name. `ReliableProvider` wraps any provider with retry/fallback chains. `RoutedProvider` routes by classifier hints. |
 
-Providers: `anthropic`, `openai`, `openai_codex`, `openrouter`, `gemini`, `ollama`, `compatible` (OpenAI-compat), `copilot`, `bedrock`, `telnyx`, `glm`
+Providers: `anthropic`, `openai`, `openai_codex`, `gemini`, `ollama`, `compatible` (OpenAI-compat)
 
 ### Messaging Channels
 
@@ -97,17 +94,17 @@ Channels: `telegram` (4.6k), `discord`, `slack`, `whatsapp`, `whatsapp_web`, `ma
 
 | Module | Key Files | Role |
 |---|---|---|
-| `tools/` | `traits.rs`, `mod.rs` (635), + 38 tool files | **What the agent can do.** `Tool` trait: `name()`, `description()`, `parameters_schema()`, `execute()`. Two registries: `default_tools()` (6 essentials) and `all_tools_with_runtime()` (full set, config-gated). |
+| `tools/` | `traits.rs`, `mod.rs`, tool files | **What the agent can do.** `Tool` trait: `name()`, `description()`, `parameters_schema()`, `execute()`. Two registries: `default_tools()` (essentials) and `all_tools_with_runtime()` (full set, config-gated). |
 
 Tool categories:
 - **File/Shell**: `shell`, `file_read`, `file_write`, `file_edit`, `glob_search`, `content_search`
 - **Memory**: `memory_store`, `memory_recall`, `memory_forget`
 - **Web**: `browser`, `browser_open`, `web_fetch`, `web_search_tool`, `http_request`
 - **Scheduling**: `cron_add`, `cron_list`, `cron_remove`, `cron_update`, `cron_run`, `cron_runs`, `schedule`
-- **Delegation**: `delegate` (sub-agent spawning), `composio` (OAuth integrations)
+- **Delegation**: `delegate` (sub-agent spawning)
 - **Hardware**: `hardware_board_info`, `hardware_memory_map`, `hardware_memory_read`
 - **SOP**: `sop_execute`, `sop_advance`, `sop_approve`, `sop_list`, `sop_status`
-- **Utility**: `git_operations`, `image_info`, `pdf_read`, `screenshot`, `pushover`, `model_routing_config`, `proxy_config`, `cli_discovery`, `schema`
+- **Utility**: `image_info`, `pdf_read`, `screenshot`, `pushover`, `model_routing_config`, `proxy_config`, `cli_discovery`, `schema`
 
 ### Memory
 
@@ -123,28 +120,21 @@ Supporting: `embeddings.rs` (embedding generation), `vector.rs` (vector ops), `c
 
 | Module | Key Files | Role |
 |---|---|---|
-| `security/` | `policy.rs` (2.3k), `secrets.rs`, `pairing.rs`, `prompt_guard.rs`, `leak_detector.rs`, `audit.rs`, `otp.rs`, `estop.rs`, `domain_matcher.rs`, + 4 sandbox files | **Policy engine and enforcement.** `SecurityPolicy`: autonomy levels (ReadOnly/Supervised/Full), workspace confinement, command allowlists, forbidden paths, rate limits, cost caps. |
+| `security/` | `policy.rs` (2.3k), `secrets.rs`, `pairing.rs`, `prompt_guard.rs`, `leak_detector.rs`, `audit.rs`, `otp.rs`, `estop.rs`, `domain_matcher.rs`, sandbox detection | **Policy engine and enforcement.** `SecurityPolicy`: autonomy levels (ReadOnly/Supervised/Full), workspace confinement, command allowlists, forbidden paths, rate limits, cost caps. |
 
-Sandboxing: `bubblewrap.rs`, `firejail.rs`, `landlock.rs`, `docker.rs`, `detect.rs` (auto-detect best available)
+Sandboxing: `bubblewrap.rs`, `firejail.rs`, `detect.rs` (auto-detect best available)
 
 ### Gateway (HTTP API)
 
 | Module | Key Files | Role |
 |---|---|---|
-| `gateway/` | `mod.rs` (2.8k), `api.rs` (1.4k), `sse.rs`, `ws.rs`, `static_files.rs` | **Axum HTTP server.** Webhook receivers (WhatsApp, WATI, Linq, Nextcloud Talk), REST API, SSE streaming, WebSocket support. Rate limiting, idempotency keys, 64KB body limit, 30s timeout. |
-
-### Hardware & Peripherals
-
-| Module | Key Files | Role |
-|---|---|---|
-| `peripherals/` | `traits.rs`, `mod.rs`, `serial.rs`, `rpi.rs`, `arduino_flash.rs`, `uno_q_bridge.rs`, `uno_q_setup.rs`, `nucleo_flash.rs`, `capabilities_tool.rs` | **Hardware board abstraction.** `Peripheral` trait: `connect()`, `disconnect()`, `health_check()`, `tools()`. Each peripheral exposes its capabilities as Tools the agent can call. |
-| `hardware/` | `discover.rs`, `introspect.rs`, `registry.rs`, `mod.rs` | **USB discovery and board identification.** Scans VID/PID, matches known boards, introspects connected devices. |
+| `gateway/` | `mod.rs` (2.8k), `api.rs` (1.4k), `sse.rs`, `ws.rs` | **Axum HTTP server.** Webhook receivers (WhatsApp, WATI, Linq, Nextcloud Talk), REST API, SSE streaming, WebSocket support. Rate limiting, idempotency keys, 64KB body limit, 30s timeout. |
 
 ### Observability
 
 | Module | Key Files | Role |
 |---|---|---|
-| `observability/` | `traits.rs`, `mod.rs`, `log.rs`, `prometheus.rs`, `otel.rs`, `verbose.rs`, `noop.rs`, `multi.rs`, `runtime_trace.rs` | **Metrics and tracing.** `Observer` trait: `log_event()`. Composite observer (`multi.rs`) fans out to multiple backends. |
+| `observability/` | `traits.rs`, `mod.rs`, `log.rs`, `verbose.rs`, `noop.rs`, `multi.rs`, `runtime_trace.rs` | **Metrics and tracing.** `Observer` trait: `log_event()`. Composite observer (`multi.rs`) fans out to multiple backends. |
 
 ### Skills & SkillForge
 
@@ -173,13 +163,11 @@ Sandboxing: `bubblewrap.rs`, `firejail.rs`, `landlock.rs`, `docker.rs`, `detect.
 
 | Module | Key Files | Role |
 |---|---|---|
-| `onboard/` | `wizard.rs` (7.2k), `mod.rs` | **First-run setup wizard.** Interactive or quick-mode onboarding: provider, API key, channels, memory backend. |
 | `auth/` | `profiles.rs`, `anthropic_token.rs`, `gemini_oauth.rs`, `openai_oauth.rs`, `oauth_common.rs` | **Auth profiles and OAuth flows.** Per-provider credential management. |
 | `approval/` | `mod.rs` | **Approval workflows.** Gate risky actions behind human approval. |
 | `doctor/` | `mod.rs` (1.3k) | **Diagnostics.** Checks daemon health, scheduler freshness, channel connectivity. |
 | `health/` | `mod.rs` | **Health check endpoints.** |
 | `cost/` | `tracker.rs`, `types.rs`, `mod.rs` | **Cost tracking.** Per-session and per-day cost accounting. |
-| `tunnel/` | `cloudflare.rs`, `ngrok.rs`, `tailscale.rs`, `custom.rs`, `none.rs`, `mod.rs` | **Tunnel adapters.** Expose gateway via Cloudflare, ngrok, Tailscale, or custom tunnels. |
 | `rag/` | `mod.rs` | **Retrieval-augmented generation.** PDF extraction, chunking support. |
 | `integrations/` | `registry.rs`, `mod.rs` | **Integration registry.** Catalog of third-party integrations. |
 | `identity.rs` | (1.5k) | **Agent identity.** Name, description, persona for the agent instance. |
@@ -193,15 +181,12 @@ Sandboxing: `bubblewrap.rs`, `firejail.rs`, `landlock.rs`, `docker.rs`, `detect.
 
 | Directory | Role |
 |---|---|
-| `crates/robot-kit/` | Separate Rust crate for hardware robot kit functionality |
 | `tests/` | Integration and E2E tests (agent loop, config persistence, channel routing, provider resolution, webhook security) |
 | `benches/` | Performance benchmarks (`agent_benchmarks.rs`) |
 | `docs/contributing/extension-examples.md` | Extension examples for custom providers, channels, tools, and memory backends |
-| `firmware/` | Embedded firmware: `arduino/`, `esp32/`, `esp32-ui/`, `nucleo/`, `uno-q-bridge/` |
-| `web/` | Web UI frontend (Vite + TypeScript) |
 | `dev/` | Local development: Docker Compose, CI script (`ci.sh`), config template, sandbox configs |
 | `scripts/` | CI helpers, release automation, bootstrap, contributor tier computation |
-| `docs/` | Documentation system: multilingual (en/zh-CN/ja/ru/fr/vi), runtime references, operations runbooks, security proposals |
+| `docs/` | Documentation system: English and Korean, runtime references, operations runbooks, security proposals |
 | `.github/` | CI workflows, PR templates, issue templates, automation |
 
 ---
@@ -231,7 +216,6 @@ Traits never import concrete implementations.
 
 ```
 zeroclaw
-├── onboard [--force] [--reinit] [--channels-only]     # First-run setup
 ├── agent [-m "msg"] [-p provider]        # Start agent loop
 ├── daemon [-p port]                      # Full runtime (gateway+channels+cron+heartbeat)
 ├── gateway [-p port]                     # HTTP API server only
@@ -239,8 +223,6 @@ zeroclaw
 ├── skill {list|install|audit|remove}
 ├── memory {list|get|stats|clear}
 ├── cron {list|add|add-at|add-every|once|remove|update|pause|resume}
-├── peripheral {list|add|flash|flash-nucleo|setup-uno-q}
-├── hardware {discover|introspect|info}
 ├── service {install|start|stop|restart|status|uninstall}
 ├── doctor                                # Diagnostics
 ├── status                                # System overview

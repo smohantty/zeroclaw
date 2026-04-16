@@ -131,7 +131,7 @@ mod tests {
     }
 
     #[test]
-    fn selectable_backends_are_ordered_for_onboarding() {
+    fn selectable_backends_are_ordered() {
         let backends = selectable_memory_backends();
         assert_eq!(backends.len(), 4);
         assert_eq!(backends[0].key, "sqlite");

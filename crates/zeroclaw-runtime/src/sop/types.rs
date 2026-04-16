@@ -31,7 +31,6 @@ impl fmt::Display for SopPriority {
 
 /// How much autonomy the agent has when executing an SOP.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum SopExecutionMode {
     /// Execute all steps without human approval.
@@ -78,12 +77,6 @@ pub enum SopTrigger {
     Cron {
         expression: String,
     },
-    Peripheral {
-        board: String,
-        signal: String,
-        #[serde(default)]
-        condition: Option<String>,
-    },
     Manual,
 }
 
@@ -93,7 +86,6 @@ impl fmt::Display for SopTrigger {
             Self::Mqtt { topic, .. } => write!(f, "mqtt:{topic}"),
             Self::Webhook { path } => write!(f, "webhook:{path}"),
             Self::Cron { expression } => write!(f, "cron:{expression}"),
-            Self::Peripheral { board, signal, .. } => write!(f, "peripheral:{board}/{signal}"),
             Self::Manual => write!(f, "manual"),
         }
     }
@@ -232,7 +224,6 @@ pub enum SopTriggerSource {
     Mqtt,
     Webhook,
     Cron,
-    Peripheral,
     Manual,
 }
 
@@ -242,7 +233,6 @@ impl fmt::Display for SopTriggerSource {
             Self::Mqtt => write!(f, "mqtt"),
             Self::Webhook => write!(f, "webhook"),
             Self::Cron => write!(f, "cron"),
-            Self::Peripheral => write!(f, "peripheral"),
             Self::Manual => write!(f, "manual"),
         }
     }

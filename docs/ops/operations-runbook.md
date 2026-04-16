@@ -26,9 +26,8 @@ For first-time installation, start from [one-click-bootstrap.md](../setup-guides
 
 ## Docker / Podman Runtime
 
-If you installed via `./install.sh --docker`, the container exits after onboarding. To run
-ZeroClaw as a long-lived container, use the repository `docker-compose.yml` or start a
-container manually against the persisted data directory.
+To run ZeroClaw as a long-lived container, use the repository `docker-compose.yml` or start
+a container manually against the persisted data directory.
 
 ### Recommended: docker-compose
 
@@ -76,8 +75,7 @@ For Podman, add `--userns keep-id --user "$(id -u):$(id -g)"` and append `:Z` to
 
 ### Key detail: do not re-run install.sh to restart
 
-Re-running `install.sh --docker` rebuilds the image and re-runs onboarding. To simply
-restart, use `docker start`, `docker compose up -d`, or `podman start`.
+To restart, use `docker start`, `docker compose up -d`, or `podman start`.
 
 For full setup instructions, see [one-click-bootstrap.md](../setup-guides/one-click-bootstrap.md#stopping-and-restarting-a-dockerpodman-container).
 

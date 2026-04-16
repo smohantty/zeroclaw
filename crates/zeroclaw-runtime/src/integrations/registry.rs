@@ -1,7 +1,6 @@
 use super::{IntegrationCategory, IntegrationEntry, IntegrationStatus};
 use zeroclaw_providers::{
-    is_glm_alias, is_minimax_alias, is_moonshot_alias, is_qianfan_alias, is_qwen_alias,
-    is_zai_alias,
+    is_minimax_alias, is_moonshot_alias, is_qianfan_alias, is_qwen_alias,
 };
 
 /// Returns the full catalog of integrations
@@ -22,71 +21,11 @@ pub fn all_integrations() -> Vec<IntegrationEntry> {
             },
         },
         IntegrationEntry {
-            name: "Discord",
-            description: "Servers, channels & DMs",
-            category: IntegrationCategory::Chat,
-            status_fn: |c| {
-                if c.channels.discord.is_some() {
-                    IntegrationStatus::Active
-                } else {
-                    IntegrationStatus::Available
-                }
-            },
-        },
-        IntegrationEntry {
-            name: "Slack",
-            description: "Workspace apps via Web API",
-            category: IntegrationCategory::Chat,
-            status_fn: |c| {
-                if c.channels.slack.is_some() {
-                    IntegrationStatus::Active
-                } else {
-                    IntegrationStatus::Available
-                }
-            },
-        },
-        IntegrationEntry {
             name: "Webhooks",
             description: "HTTP endpoint for triggers",
             category: IntegrationCategory::Chat,
             status_fn: |c| {
                 if c.channels.webhook.is_some() {
-                    IntegrationStatus::Active
-                } else {
-                    IntegrationStatus::Available
-                }
-            },
-        },
-        IntegrationEntry {
-            name: "WhatsApp",
-            description: "Meta Cloud API via webhook",
-            category: IntegrationCategory::Chat,
-            status_fn: |c| {
-                if c.channels.whatsapp.is_some() {
-                    IntegrationStatus::Active
-                } else {
-                    IntegrationStatus::Available
-                }
-            },
-        },
-        IntegrationEntry {
-            name: "Signal",
-            description: "Privacy-focused via signal-cli",
-            category: IntegrationCategory::Chat,
-            status_fn: |c| {
-                if c.channels.signal.is_some() {
-                    IntegrationStatus::Active
-                } else {
-                    IntegrationStatus::Available
-                }
-            },
-        },
-        IntegrationEntry {
-            name: "iMessage",
-            description: "macOS AppleScript bridge",
-            category: IntegrationCategory::Chat,
-            status_fn: |c| {
-                if c.channels.imessage.is_some() {
                     IntegrationStatus::Active
                 } else {
                     IntegrationStatus::Available
@@ -100,32 +39,8 @@ pub fn all_integrations() -> Vec<IntegrationEntry> {
             status_fn: |_| IntegrationStatus::ComingSoon,
         },
         IntegrationEntry {
-            name: "Matrix",
-            description: "Matrix protocol (Element)",
-            category: IntegrationCategory::Chat,
-            status_fn: |c| {
-                if c.channels.matrix.is_some() {
-                    IntegrationStatus::Active
-                } else {
-                    IntegrationStatus::Available
-                }
-            },
-        },
-        IntegrationEntry {
-            name: "Nostr",
-            description: "Decentralized DMs (NIP-04)",
-            category: IntegrationCategory::Chat,
-            status_fn: |_| IntegrationStatus::ComingSoon,
-        },
-        IntegrationEntry {
             name: "WebChat",
             description: "Browser-based chat UI",
-            category: IntegrationCategory::Chat,
-            status_fn: |_| IntegrationStatus::ComingSoon,
-        },
-        IntegrationEntry {
-            name: "Nextcloud Talk",
-            description: "Self-hosted Nextcloud chat",
             category: IntegrationCategory::Chat,
             status_fn: |_| IntegrationStatus::ComingSoon,
         },
@@ -135,48 +50,7 @@ pub fn all_integrations() -> Vec<IntegrationEntry> {
             category: IntegrationCategory::Chat,
             status_fn: |_| IntegrationStatus::ComingSoon,
         },
-        IntegrationEntry {
-            name: "DingTalk",
-            description: "DingTalk Stream Mode",
-            category: IntegrationCategory::Chat,
-            status_fn: |c| {
-                if c.channels.dingtalk.is_some() {
-                    IntegrationStatus::Active
-                } else {
-                    IntegrationStatus::Available
-                }
-            },
-        },
-        IntegrationEntry {
-            name: "QQ Official",
-            description: "Tencent QQ Bot SDK",
-            category: IntegrationCategory::Chat,
-            status_fn: |c| {
-                if c.channels.qq.is_some() {
-                    IntegrationStatus::Active
-                } else {
-                    IntegrationStatus::Available
-                }
-            },
-        },
         // ── AI Models ───────────────────────────────────────────
-        IntegrationEntry {
-            name: "OpenRouter",
-            description: "200+ models, 1 API key",
-            category: IntegrationCategory::AiModel,
-            status_fn: |c| {
-                if c.providers.fallback.as_deref() == Some("openrouter")
-                    && c.providers
-                        .fallback_provider()
-                        .and_then(|e| e.api_key.as_ref())
-                        .is_some()
-                {
-                    IntegrationStatus::Active
-                } else {
-                    IntegrationStatus::Available
-                }
-            },
-        },
         IntegrationEntry {
             name: "Anthropic",
             description: "Claude 3.5/4 Sonnet & Opus",
@@ -390,30 +264,6 @@ pub fn all_integrations() -> Vec<IntegrationEntry> {
             },
         },
         IntegrationEntry {
-            name: "Z.AI",
-            description: "Z.AI inference",
-            category: IntegrationCategory::AiModel,
-            status_fn: |c| {
-                if c.providers.fallback.as_deref().is_some_and(is_zai_alias) {
-                    IntegrationStatus::Active
-                } else {
-                    IntegrationStatus::Available
-                }
-            },
-        },
-        IntegrationEntry {
-            name: "GLM",
-            description: "ChatGLM / Zhipu models",
-            category: IntegrationCategory::AiModel,
-            status_fn: |c| {
-                if c.providers.fallback.as_deref().is_some_and(is_glm_alias) {
-                    IntegrationStatus::Active
-                } else {
-                    IntegrationStatus::Available
-                }
-            },
-        },
-        IntegrationEntry {
             name: "MiniMax",
             description: "MiniMax AI models",
             category: IntegrationCategory::AiModel,
@@ -435,18 +285,6 @@ pub fn all_integrations() -> Vec<IntegrationEntry> {
             category: IntegrationCategory::AiModel,
             status_fn: |c| {
                 if c.providers.fallback.as_deref().is_some_and(is_qwen_alias) {
-                    IntegrationStatus::Active
-                } else {
-                    IntegrationStatus::Available
-                }
-            },
-        },
-        IntegrationEntry {
-            name: "Amazon Bedrock",
-            description: "AWS managed model access",
-            category: IntegrationCategory::AiModel,
-            status_fn: |c| {
-                if c.providers.fallback.as_deref() == Some("bedrock") {
                     IntegrationStatus::Active
                 } else {
                     IntegrationStatus::Available
@@ -531,26 +369,8 @@ pub fn all_integrations() -> Vec<IntegrationEntry> {
         },
         // ── Productivity ────────────────────────────────────────
         IntegrationEntry {
-            name: "Google Workspace",
-            description: "Drive, Gmail, Calendar, Sheets, Docs via gws CLI",
-            category: IntegrationCategory::Productivity,
-            status_fn: |c| {
-                if c.google_workspace.enabled {
-                    IntegrationStatus::Active
-                } else {
-                    IntegrationStatus::Available
-                }
-            },
-        },
-        IntegrationEntry {
             name: "GitHub",
             description: "Code, issues, PRs",
-            category: IntegrationCategory::Productivity,
-            status_fn: |_| IntegrationStatus::ComingSoon,
-        },
-        IntegrationEntry {
-            name: "Notion",
-            description: "Workspace & databases",
             category: IntegrationCategory::Productivity,
             status_fn: |_| IntegrationStatus::ComingSoon,
         },
@@ -695,12 +515,6 @@ pub fn all_integrations() -> Vec<IntegrationEntry> {
             category: IntegrationCategory::ToolsAutomation,
             status_fn: |_| IntegrationStatus::Active,
         },
-        IntegrationEntry {
-            name: "Canvas",
-            description: "Visual workspace + A2UI",
-            category: IntegrationCategory::ToolsAutomation,
-            status_fn: |_| IntegrationStatus::ComingSoon,
-        },
         // ── Media & Creative ────────────────────────────────────
         IntegrationEntry {
             name: "Image Gen",
@@ -732,18 +546,6 @@ pub fn all_integrations() -> Vec<IntegrationEntry> {
             description: "Tweet, reply, search",
             category: IntegrationCategory::Social,
             status_fn: |_| IntegrationStatus::ComingSoon,
-        },
-        IntegrationEntry {
-            name: "Email",
-            description: "IMAP/SMTP email channel",
-            category: IntegrationCategory::Social,
-            status_fn: |c| {
-                if c.channels.email.is_some() {
-                    IntegrationStatus::Active
-                } else {
-                    IntegrationStatus::Available
-                }
-            },
         },
         // ── Platforms ───────────────────────────────────────────
         IntegrationEntry {
@@ -778,13 +580,13 @@ pub fn all_integrations() -> Vec<IntegrationEntry> {
         },
         IntegrationEntry {
             name: "iOS",
-            description: "Chat via Telegram/Discord",
+            description: "Chat via Telegram",
             category: IntegrationCategory::Platform,
             status_fn: |_| IntegrationStatus::Available,
         },
         IntegrationEntry {
             name: "Android",
-            description: "Chat via Telegram/Discord",
+            description: "Chat via Telegram",
             category: IntegrationCategory::Platform,
             status_fn: |_| IntegrationStatus::Available,
         },
@@ -1081,13 +883,6 @@ mod tests {
             IntegrationStatus::Active
         ));
 
-        config.providers.fallback = Some("glm-cn".to_string());
-        let glm = entries.iter().find(|e| e.name == "GLM").unwrap();
-        assert!(matches!(
-            (glm.status_fn)(&config),
-            IntegrationStatus::Active
-        ));
-
         config.providers.fallback = Some("moonshot-intl".to_string());
         let moonshot = entries.iter().find(|e| e.name == "Moonshot").unwrap();
         assert!(matches!(
@@ -1099,13 +894,6 @@ mod tests {
         let qwen = entries.iter().find(|e| e.name == "Qwen").unwrap();
         assert!(matches!(
             (qwen.status_fn)(&config),
-            IntegrationStatus::Active
-        ));
-
-        config.providers.fallback = Some("zai-cn".to_string());
-        let zai = entries.iter().find(|e| e.name == "Z.AI").unwrap();
-        assert!(matches!(
-            (zai.status_fn)(&config),
             IntegrationStatus::Active
         ));
 

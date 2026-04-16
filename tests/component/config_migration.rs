@@ -21,16 +21,16 @@ fn top_level_fields_merge_with_existing_model_providers_entry() {
     let config = migrate(
         r#"
 api_key = "sk-test"
-default_provider = "openrouter"
+default_provider = "openai"
 
-[model_providers.openrouter]
-base_url = "https://openrouter.ai/api"
+[model_providers.openai]
+base_url = "https://api.openai.com/v1"
 "#,
     );
 
-    let entry = &config.providers.models["openrouter"];
+    let entry = &config.providers.models["openai"];
     assert_eq!(entry.api_key.as_deref(), Some("sk-test"));
-    assert_eq!(entry.base_url.as_deref(), Some("https://openrouter.ai/api"));
+    assert_eq!(entry.base_url.as_deref(), Some("https://api.openai.com/v1"));
 }
 
 #[test]
@@ -38,14 +38,14 @@ fn profile_values_take_precedence_over_top_level() {
     let config = migrate(
         r#"
 api_key = "sk-top-level"
-default_provider = "openrouter"
+default_provider = "openai"
 
-[model_providers.openrouter]
+[model_providers.openai]
 api_key = "sk-from-profile"
 "#,
     );
 
-    let entry = &config.providers.models["openrouter"];
+    let entry = &config.providers.models["openai"];
     assert_eq!(entry.api_key.as_deref(), Some("sk-from-profile"));
 }
 
@@ -120,18 +120,18 @@ fn already_v2_config_unchanged() {
 schema_version = 2
 
 [providers]
-fallback = "openrouter"
+fallback = "openai"
 
-[providers.models.openrouter]
+[providers.models.openai]
 api_key = "sk-test"
-model = "claude"
+model = "gpt-5.2"
 "#,
     );
 
     assert_eq!(config.schema_version, CURRENT_SCHEMA_VERSION);
-    assert_eq!(config.providers.fallback.as_deref(), Some("openrouter"));
+    assert_eq!(config.providers.fallback.as_deref(), Some("openai"));
     assert_eq!(
-        config.providers.models["openrouter"].api_key.as_deref(),
+        config.providers.models["openai"].api_key.as_deref(),
         Some("sk-test")
     );
 }
@@ -179,7 +179,7 @@ fn migrate_file_preserves_comments() {
 schema_version = 0
 
 api_key = "sk-test"          # my API key
-default_provider = "openrouter"
+default_provider = "openai"
 
 # Agent tuning
 [agent]
@@ -218,9 +218,9 @@ fn migrate_file_returns_none_when_current() {
 schema_version = 2
 
 [providers]
-fallback = "openrouter"
+fallback = "openai"
 
-[providers.models.openrouter]
+[providers.models.openai]
 api_key = "sk-test"
 "#;
     assert!(migration::migrate_file(raw).unwrap().is_none());
@@ -230,8 +230,8 @@ api_key = "sk-test"
 fn migrate_file_round_trips() {
     let raw = r#"
 api_key = "rt-key"
-default_provider = "openrouter"
-default_model = "claude"
+default_provider = "openai"
+default_model = "gpt-5.2"
 default_temperature = 0.5
 provider_timeout_secs = 60
 
@@ -250,9 +250,9 @@ allowed_users = ["@u:m"]
 
     let config = migrate(&migrated_toml);
     assert_eq!(config.schema_version, CURRENT_SCHEMA_VERSION);
-    assert_eq!(config.providers.fallback.as_deref(), Some("openrouter"));
+    assert_eq!(config.providers.fallback.as_deref(), Some("openai"));
     assert_eq!(
-        config.providers.models["openrouter"].api_key.as_deref(),
+        config.providers.models["openai"].api_key.as_deref(),
         Some("rt-key")
     );
     assert!(config.providers.models.contains_key("ollama"));
@@ -386,8 +386,8 @@ allowed_rooms = ["!existing:matrix.org"]
 #[test]
 fn realistic_v1_config_migrates_and_validates() {
     let raw = r#"
-default_provider = "openrouter"
-default_model = "anthropic/claude-sonnet-4.6"
+default_provider = "openai"
+default_model = "gpt-5.2"
 default_temperature = 0.7
 provider_timeout_secs = 120
 model_routes = []
@@ -427,7 +427,7 @@ require_pairing = true
     let config = migrate(raw);
 
     assert_eq!(config.schema_version, CURRENT_SCHEMA_VERSION);
-    assert_eq!(config.providers.fallback.as_deref(), Some("openrouter"));
+    assert_eq!(config.providers.fallback.as_deref(), Some("openai"));
     assert_eq!(
         config
             .providers

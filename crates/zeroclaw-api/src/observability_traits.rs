@@ -147,7 +147,7 @@ pub enum ObserverMetric {
 /// Core observability trait for recording agent runtime telemetry.
 ///
 /// Implement this trait to integrate with any monitoring backend (structured
-/// logging, Prometheus, OpenTelemetry, etc.). The agent runtime holds one or
+/// logging, etc.). The agent runtime holds one or
 /// more `Observer` instances and calls [`record_event`](Observer::record_event)
 /// and [`record_metric`](Observer::record_metric) at key lifecycle points.
 ///
@@ -176,14 +176,13 @@ pub trait Observer: Send + Sync + 'static {
 
     /// Return the human-readable name of this observer backend.
     ///
-    /// Used in logs and diagnostics (e.g., `"console"`, `"prometheus"`,
-    /// `"opentelemetry"`).
+    /// Used in logs and diagnostics (e.g., `"console"`).
     fn name(&self) -> &str;
 
     /// Downcast to `Any` for backend-specific operations.
     ///
     /// Enables callers to access concrete observer types when needed
-    /// (e.g., retrieving a Prometheus registry handle for custom metrics).
+    /// (e.g., retrieving a backend-specific handle for custom metrics).
     fn as_any(&self) -> &dyn std::any::Any;
 }
 

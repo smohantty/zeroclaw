@@ -831,7 +831,7 @@ impl Provider for AnthropicProvider {
         }
 
         // Check for tool_choice override from the agent loop (e.g. "any"
-        // to force tool use for hardware requests).
+        // to force tool use for requests that require tool execution).
         let tool_choice_override = zeroclaw_api::TOOL_CHOICE_OVERRIDE
             .try_with(Clone::clone)
             .ok()

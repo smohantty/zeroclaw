@@ -123,9 +123,6 @@ jobs:
 
           echo "=== Downstream Repository Access ==="
           check_repo_access "zeroclaw-labs/zeroclaw-website"
-          check_repo_access "zeroclaw-labs/dokploy"
-          check_repo_access "zeroclaw-labs/easypanel"
-          check_repo_access "zeroclaw-labs/coolify"
 
           echo ""
           echo "=== Homebrew Fork Access ==="
@@ -166,8 +163,6 @@ jobs:
           echo "=== Version Consistency (v$VERSION) ==="
           check_version "Cargo.toml" "version = \"$VERSION\"" "Cargo.toml"
           check_version "Cargo.lock" "version = \"$VERSION\"" "Cargo.lock"
-          check_version "apps/tauri/tauri.conf.json" "\"version\": \"$VERSION\"" "Tauri config"
-          check_version "marketplace/dokploy/meta-entry.json" "\"version\": \"$VERSION\"" "Dokploy meta"
 
           if [[ $failed -ne 0 ]]; then
             echo ""

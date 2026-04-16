@@ -576,8 +576,8 @@ mod tests {
         agents.insert(
             "writer".to_string(),
             DelegateAgentConfig {
-                provider: "openrouter".to_string(),
-                model: "anthropic/claude-sonnet-4-20250514".to_string(),
+                provider: "openai".to_string(),
+                model: "gpt-5.2".to_string(),
                 system_prompt: Some("You are a technical writer.".to_string()),
                 api_key: Some("test-key".to_string()),
                 temperature: Some(0.5),

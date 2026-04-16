@@ -7,7 +7,6 @@ use super::schema::{EmbeddingRouteConfig, ModelProviderConfig, ModelRouteConfig}
 /// Top-level `[providers]` section. Wraps model provider profiles, routing rules,
 /// and an optional fallback reference.
 #[derive(Debug, Clone, Serialize, Deserialize, Configurable, Default)]
-#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[prefix = "providers"]
 pub struct ProvidersConfig {
     /// Key of the provider entry to use when no route matches.

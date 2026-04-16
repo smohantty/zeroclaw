@@ -68,9 +68,6 @@ pub async fn run_full(config: &crate::config::Config) -> Result<Vec<CheckResult>
     // 10. Memory write/read round-trip
     results.push(check_memory_roundtrip(config).await);
 
-    // 11. WebSocket handshake
-    results.push(check_websocket_handshake(config).await);
-
     Ok(results)
 }
 
@@ -176,15 +173,11 @@ fn check_tool_registry(config: &crate::config::Config) -> CheckResult {
 }
 
 fn check_channel_config(config: &crate::config::Config) -> CheckResult {
-    let channels = config.channels.channels();
-    let configured = channels.iter().filter(|(_, c)| *c).count();
+    let configured = usize::from(config.channels.telegram.is_some())
+        + usize::from(config.channels.webhook.is_some());
     CheckResult::pass(
         "channels",
-        format!(
-            "{} channel types, {} configured",
-            channels.len(),
-            configured
-        ),
+        format!("2 channel types, {} configured", configured),
     )
 }
 
@@ -265,20 +258,5 @@ async fn check_memory_roundtrip(config: &crate::config::Config) -> CheckResult {
             let _ = mem.forget(test_key).await;
             CheckResult::fail("memory", format!("read failed: {e}"))
         }
-    }
-}
-
-async fn check_websocket_handshake(config: &crate::config::Config) -> CheckResult {
-    let port = config.gateway.port;
-    let host = if config.gateway.host == "[::]" || config.gateway.host == "0.0.0.0" {
-        "127.0.0.1"
-    } else {
-        &config.gateway.host
-    };
-    let url = format!("ws://{host}:{port}/ws/chat");
-
-    match tokio_tungstenite::connect_async(&url).await {
-        Ok((_, _)) => CheckResult::pass("websocket", format!("handshake OK at {url}")),
-        Err(e) => CheckResult::fail("websocket", format!("handshake failed at {url}: {e}")),
     }
 }

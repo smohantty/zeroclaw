@@ -8,21 +8,10 @@
 
 ## 언어별 진입점
 
-- 문서 구조 맵 (언어/부분/기능): [structure/README.md](maintainers/structure-README.md)
-- 영어 README: [../README.md](../README.md)
-- 중국어 README: [../README.zh-CN.md](../README.zh-CN.md)
-- 일본어 README: [../README.ja.md](../README.ja.md)
-- 러시아어 README: [../README.ru.md](../README.ru.md)
-- 프랑스어 README: [../README.fr.md](../README.fr.md)
-- 베트남어 README: [../README.vi.md](../README.vi.md)
-- 영어 문서 허브: [README.md](README.md)
-- 중국어 문서 허브: [README.zh-CN.md](README.zh-CN.md)
-- 일본어 문서 허브: [README.ja.md](README.ja.md)
-- 러시아어 문서 허브: [README.ru.md](README.ru.md)
-- 프랑스어 문서 허브: [README.fr.md](README.fr.md)
-- 베트남어 문서 허브: [i18n/vi/README.md](i18n/vi/README.md)
-- 현지화 문서 색인: [i18n/README.md](i18n/README.md)
-- i18n 커버리지 맵: [i18n-coverage.md](maintainers/i18n-coverage.md)
+- 영어 README: [../../README.md](../../README.md)
+- 한국어 README: [README.md](README.md)
+- 영어 문서 허브: [../../README.md](../../README.md)
+- 한국어 문서 요약: [SUMMARY.md](SUMMARY.md)
 
 ## 컬렉션
 
@@ -41,7 +30,6 @@
 - [nextcloud-talk-setup.md](setup-guides/nextcloud-talk-setup.md)
 - [config-reference.md](reference/api/config-reference.md)
 - [custom-providers.md](contributing/custom-providers.md)
-- [zai-glm-setup.md](setup-guides/zai-glm-setup.md)
 - [langgraph-integration.md](contributing/langgraph-integration.md)
 
 ### 3) 운영 및 배포
@@ -50,29 +38,17 @@
 - [operations-runbook.md](ops/operations-runbook.md)
 - [release-process.md](contributing/release-process.md)
 - [troubleshooting.md](ops/troubleshooting.md)
-- [network-deployment.md](ops/network-deployment.md)
 - [mattermost-setup.md](setup-guides/mattermost-setup.md)
 
 ### 4) 보안 설계 및 제안
 
 - [security/README.md](security/README.md)
-- [agnostic-security.md](security/agnostic-security.md)
-- [frictionless-security.md](security/frictionless-security.md)
-- [sandboxing.md](security/sandboxing.md)
 - [resource-limits.md](ops/resource-limits.md)
 - [audit-logging.md](security/audit-logging.md)
 - [security-roadmap.md](security/security-roadmap.md)
 
 ### 5) 하드웨어 및 주변 장치
 
-- [hardware/README.md](hardware/README.md)
-- [hardware-peripherals-design.md](hardware/hardware-peripherals-design.md)
-- [adding-boards-and-tools.md](contributing/adding-boards-and-tools.md)
-- [nucleo-setup.md](hardware/nucleo-setup.md)
-- [arduino-uno-q-setup.md](hardware/arduino-uno-q-setup.md)
-- [datasheets/nucleo-f401re.md](hardware/datasheets/nucleo-f401re.md)
-- [datasheets/arduino-uno.md](hardware/datasheets/arduino-uno.md)
-- [datasheets/esp32.md](hardware/datasheets/esp32.md)
 
 ### 6) 기여 및 CI
 

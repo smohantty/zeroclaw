@@ -19,7 +19,7 @@ const SHELL_JOB_TIMEOUT_SECS: u64 = 120;
 const SCHEDULER_COMPONENT: &str = "scheduler";
 
 /// Type alias for the optional broadcast sender used to push cron results
-/// to connected dashboard/SSE clients.
+/// to connected SSE clients.
 pub type EventBroadcast = Option<tokio::sync::broadcast::Sender<serde_json::Value>>;
 
 pub async fn run(config: Config, event_tx: EventBroadcast) -> Result<()> {
@@ -205,7 +205,7 @@ async fn process_due_jobs(
         if !success {
             tracing::warn!("Scheduler job '{job_id}' failed: {output}");
         }
-        // Broadcast cron result to dashboard/SSE clients.
+        // Broadcast cron result to SSE clients.
         if let Some(tx) = event_tx {
             let _ = tx.send(serde_json::json!({
                 "type": "cron_result",
@@ -324,7 +324,6 @@ async fn run_agent_job(
                     .fallback_provider()
                     .and_then(|e| e.temperature)
                     .unwrap_or(0.7),
-                vec![],
                 false,
                 None,
                 job.allowed_tools.clone(),

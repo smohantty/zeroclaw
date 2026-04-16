@@ -1,7 +1,7 @@
 //! Corporate-friendly secure node transport using standard HTTPS + HMAC-SHA256 authentication.
 //!
 //! All inter-node traffic uses plain HTTPS on port 443 — no exotic protocols,
-//! no custom binary framing, no UDP tunneling.  This makes the transport
+//! no custom binary framing, no UDP encapsulation.  This makes the transport
 //! compatible with corporate proxies, firewalls, and IT audit expectations.
 
 use anyhow::{Result, bail};

@@ -13,11 +13,7 @@ Last refreshed: **February 22, 2026**.
 | Language | Entry point | Canonical tree | Notes |
 |---|---|---|---|
 | English | `docs/README.md` | `docs/` | Source-of-truth runtime behavior docs are authored in English first. |
-| Chinese (`zh-CN`) | `docs/README.zh-CN.md` | `docs/` localized hub + selected localized docs | Uses localized hub and shared category structure. |
-| Japanese (`ja`) | `docs/README.ja.md` | `docs/` localized hub + selected localized docs | Uses localized hub and shared category structure. |
-| Russian (`ru`) | `docs/README.ru.md` | `docs/` localized hub + selected localized docs | Uses localized hub and shared category structure. |
-| French (`fr`) | `docs/README.fr.md` | `docs/` localized hub + selected localized docs | Uses localized hub and shared category structure. |
-| Vietnamese (`vi`) | `docs/i18n/vi/README.md` | `docs/i18n/vi/` | Full Vietnamese tree is canonical under `docs/i18n/vi/`; `docs/vi/` and `docs/*.vi.md` are compatibility paths. |
+| Korean (`ko`) | `docs/i18n/ko/README.md` | `docs/i18n/ko/` | Korean is the only maintained localized documentation tree. |
 
 ## 2) By Part (Category)
 
@@ -27,7 +23,6 @@ These directories are the primary navigation modules by product area.
 - `docs/reference/` for command/config/provider/channel reference indexes
 - `docs/operations/` for day-2 operations, deployment, and troubleshooting entry points
 - `docs/security/` for security guidance and security-oriented navigation
-- `docs/hardware/` for board/peripheral implementation and hardware workflows
 - `docs/contributing/` for contribution and CI/review processes
 - `docs/project/` for project snapshots, planning context, and status-oriented docs
 
@@ -48,9 +43,7 @@ Use this grouping to decide where new docs belong.
 ### Setup / Integration Guides
 
 - `docs/custom-providers.md`
-- `docs/zai-glm-setup.md`
 - `docs/langgraph-integration.md`
-- `docs/network-deployment.md`
 - `docs/matrix-e2ee-guide.md`
 - `docs/mattermost-setup.md`
 - `docs/nextcloud-talk-setup.md`
@@ -64,11 +57,8 @@ Use this grouping to decide where new docs belong.
 
 ### Proposals / Roadmaps
 
-- `docs/sandboxing.md`
 - `docs/resource-limits.md`
 - `docs/audit-logging.md`
-- `docs/agnostic-security.md`
-- `docs/frictionless-security.md`
 - `docs/security-roadmap.md`
 
 ### Snapshots / Time-Bound Reports
@@ -83,5 +73,4 @@ Use this grouping to decide where new docs belong.
 ## Placement Rules (Quick)
 
 - New runtime behavior docs must be linked from the appropriate category index and `docs/SUMMARY.md`.
-- Navigation changes must preserve locale parity across `docs/README*.md` and `docs/SUMMARY*.md`.
-- Vietnamese full localization lives in `docs/i18n/vi/`; compatibility files should point to canonical paths.
+- Navigation changes must preserve parity between English and Korean entry points.

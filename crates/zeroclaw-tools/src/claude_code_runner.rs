@@ -32,9 +32,6 @@ pub struct ClaudeCodeHookEvent {
 /// execution events back to ZeroClaw's gateway endpoint, enabling live Slack
 /// progress updates and SSH session handoff.
 ///
-/// Unlike [`ClaudeCodeTool`](super::claude_code::ClaudeCodeTool) which runs
-/// `claude -p` inline and waits for completion, this runner:
-///
 /// 1. Creates a named tmux session (`<prefix><id>`)
 /// 2. Launches `claude` inside it with `--hook-url` pointing at the gateway
 /// 3. Returns immediately with the session ID and an SSH attach command

@@ -15,21 +15,6 @@ pub fn create_sandbox(config: &SecurityConfig) -> Arc<dyn Sandbox> {
 
     // If specific backend requested, try that
     match backend {
-        SandboxBackend::Landlock => {
-            #[cfg(feature = "sandbox-landlock")]
-            {
-                #[cfg(target_os = "linux")]
-                {
-                    if let Ok(sandbox) = super::landlock::LandlockSandbox::new() {
-                        return Arc::new(sandbox);
-                    }
-                }
-            }
-            tracing::warn!(
-                "Landlock requested but not available, falling back to application-layer"
-            );
-            Arc::new(super::traits::NoopSandbox)
-        }
         SandboxBackend::Firejail => {
             #[cfg(target_os = "linux")]
             {
@@ -57,25 +42,6 @@ pub fn create_sandbox(config: &SecurityConfig) -> Arc<dyn Sandbox> {
             );
             Arc::new(super::traits::NoopSandbox)
         }
-        SandboxBackend::Docker => {
-            if let Ok(sandbox) = super::docker::DockerSandbox::new() {
-                return Arc::new(sandbox);
-            }
-            tracing::warn!("Docker requested but not available, falling back to application-layer");
-            Arc::new(super::traits::NoopSandbox)
-        }
-        SandboxBackend::SandboxExec => {
-            #[cfg(target_os = "macos")]
-            {
-                if let Ok(sandbox) = super::seatbelt::SeatbeltSandbox::new() {
-                    return Arc::new(sandbox);
-                }
-            }
-            tracing::warn!(
-                "sandbox-exec requested but not available, falling back to application-layer"
-            );
-            Arc::new(super::traits::NoopSandbox)
-        }
         SandboxBackend::Auto | SandboxBackend::None => {
             // Auto-detect best available
             detect_best_sandbox()
@@ -87,16 +53,6 @@ pub fn create_sandbox(config: &SecurityConfig) -> Arc<dyn Sandbox> {
 fn detect_best_sandbox() -> Arc<dyn Sandbox> {
     #[cfg(target_os = "linux")]
     {
-        // Try Landlock first (native, no dependencies)
-        #[cfg(feature = "sandbox-landlock")]
-        {
-            if let Ok(sandbox) = super::landlock::LandlockSandbox::probe() {
-                tracing::info!("Landlock sandbox enabled (Linux kernel 5.13+)");
-                return Arc::new(sandbox);
-            }
-        }
-
-        // Try Firejail second (user-space tool)
         if let Ok(sandbox) = super::firejail::FirejailSandbox::probe() {
             tracing::info!("Firejail sandbox enabled");
             return Arc::new(sandbox);
@@ -114,17 +70,6 @@ fn detect_best_sandbox() -> Arc<dyn Sandbox> {
             }
         }
 
-        // Try sandbox-exec (Seatbelt) — built into macOS
-        if let Ok(sandbox) = super::seatbelt::SeatbeltSandbox::probe() {
-            tracing::info!("macOS sandbox-exec (Seatbelt) enabled");
-            return Arc::new(sandbox);
-        }
-    }
-
-    // Docker is heavy but works everywhere if docker is installed
-    if let Ok(sandbox) = super::docker::DockerSandbox::probe() {
-        tracing::info!("Docker sandbox enabled");
-        return Arc::new(sandbox);
     }
 
     // Fallback: application-layer security only

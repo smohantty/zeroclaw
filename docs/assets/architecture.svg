@@ -88,25 +88,6 @@
   <!-- Arrow: Security → Agent -->
   <line x1="295" y1="390" x2="295" y2="415" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowAmber)"/>
 
-  <!-- ═══════════ CENTER: Tunnel ═══════════ -->
-  <rect x="405" y="80" width="180" height="200" rx="10" fill="#1c2333" stroke="#06b6d4" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="495" y="105" text-anchor="middle" fill="#67e8f9" font-size="13" font-weight="600">Agnostic Tunnel</text>
-  <text x="495" y="120" text-anchor="middle" fill="#7d8590" font-size="9">Bring Your Own</text>
-
-  <rect x="418" y="132" width="155" height="22" rx="5" fill="#1e293b"/>
-  <text x="495" y="148" text-anchor="middle" fill="#22d3ee" font-size="10">Cloudflare</text>
-  <rect x="418" y="160" width="155" height="22" rx="5" fill="#1e293b"/>
-  <text x="495" y="176" text-anchor="middle" fill="#22d3ee" font-size="10">Tailscale</text>
-  <rect x="418" y="188" width="155" height="22" rx="5" fill="#1e293b"/>
-  <text x="495" y="204" text-anchor="middle" fill="#22d3ee" font-size="10">ngrok</text>
-  <rect x="418" y="216" width="155" height="22" rx="5" fill="#1e293b"/>
-  <text x="495" y="232" text-anchor="middle" fill="#22d3ee" font-size="10">Custom (bore, frp, ssh...)</text>
-
-  <text x="495" y="265" text-anchor="middle" fill="#7d8590" font-size="9" font-style="italic">+ any Tunnel trait</text>
-
-  <!-- Arrow: Tunnel → Agent -->
-  <line x1="495" y1="280" x2="495" y2="415" stroke="#06b6d4" stroke-width="2" marker-end="url(#arrowCyan)"/>
-
   <!-- ═══════════ RIGHT: AI Providers ═══════════ -->
   <rect x="600" y="80" width="480" height="200" rx="10" fill="#1c2333" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow)"/>
   <text x="840" y="105" text-anchor="middle" fill="#4ade80" font-size="13" font-weight="600">AI Providers (22+)</text>
@@ -114,7 +95,7 @@
 
   <!-- Provider grid: 4 columns x 4 rows -->
   <rect x="615" y="132" width="105" height="22" rx="5" fill="#1a2e1a"/>
-  <text x="667" y="148" text-anchor="middle" fill="#86efac" font-size="9">OpenRouter</text>
+  <text x="667" y="148" text-anchor="middle" fill="#86efac" font-size="9">Gemini</text>
   <rect x="730" y="132" width="105" height="22" rx="5" fill="#1a2e1a"/>
   <text x="782" y="148" text-anchor="middle" fill="#86efac" font-size="9">Anthropic</text>
   <rect x="845" y="132" width="105" height="22" rx="5" fill="#1a2e1a"/>
@@ -182,11 +163,6 @@
   <rect x="800" y="460" width="110" height="42" rx="8" fill="#1a2e1a" stroke="#4ade80" stroke-width="1"/>
   <text x="855" y="478" text-anchor="middle" fill="#4ade80" font-size="10" font-weight="600">Response</text>
   <text x="855" y="495" text-anchor="middle" fill="#86efac" font-size="14">Out</text>
-
-  <!-- Composio (optional) -->
-  <rect x="950" y="460" width="110" height="42" rx="8" fill="#1a2e1a" stroke="#4ade80" stroke-width="1" stroke-dasharray="4,2"/>
-  <text x="1005" y="478" text-anchor="middle" fill="#4ade80" font-size="9" font-weight="600">Composio</text>
-  <text x="1005" y="493" text-anchor="middle" fill="#7d8590" font-size="8">1000+ OAuth</text>
 
   <!-- Agent loop arrows -->
   <line x1="160" y1="481" x2="200" y2="481" stroke="#4ade80" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
@@ -257,55 +233,6 @@
 
   <!-- Arrow: Agent → Heartbeat -->
   <line x1="960" y1="550" x2="960" y2="570" stroke="#06b6d4" stroke-width="2"/>
-
-  <!-- ═══════════ BOTTOM: Setup Wizard ═══════════ -->
-  <rect x="20" y="760" width="1060" height="170" rx="10" fill="#1c2333" stroke="#f472b6" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="550" y="785" text-anchor="middle" fill="#f9a8d4" font-size="14" font-weight="700">Setup Wizard  --  zeroclaw onboard (quick default | --interactive for full wizard)</text>
-  <text x="550" y="802" text-anchor="middle" fill="#7d8590" font-size="10">7 steps, under 60 seconds | Live connection testing | Secure defaults</text>
-
-  <!-- Wizard steps: 7 -->
-  <rect x="30" y="815" width="130" height="38" rx="8" fill="#2d1f3d" stroke="#c084fc" stroke-width="1"/>
-  <text x="95" y="831" text-anchor="middle" fill="#e9d5ff" font-size="8" font-weight="600">1. Workspace</text>
-  <text x="95" y="845" text-anchor="middle" fill="#a78bfa" font-size="7">~/.zeroclaw/</text>
-
-  <rect x="170" y="815" width="130" height="38" rx="8" fill="#2d1f3d" stroke="#c084fc" stroke-width="1"/>
-  <text x="235" y="831" text-anchor="middle" fill="#e9d5ff" font-size="8" font-weight="600">2. AI Provider</text>
-  <text x="235" y="845" text-anchor="middle" fill="#a78bfa" font-size="7">22+ or custom URL</text>
-
-  <rect x="310" y="815" width="130" height="38" rx="8" fill="#2d1f3d" stroke="#c084fc" stroke-width="1"/>
-  <text x="375" y="831" text-anchor="middle" fill="#e9d5ff" font-size="8" font-weight="600">3. Channels</text>
-  <text x="375" y="845" text-anchor="middle" fill="#a78bfa" font-size="7">7 channels + live test</text>
-
-  <rect x="450" y="815" width="130" height="38" rx="8" fill="#2d1f3d" stroke="#c084fc" stroke-width="1"/>
-  <text x="515" y="831" text-anchor="middle" fill="#e9d5ff" font-size="8" font-weight="600">4. Tunnel</text>
-  <text x="515" y="845" text-anchor="middle" fill="#a78bfa" font-size="7">5 providers or skip</text>
-
-  <rect x="590" y="815" width="130" height="38" rx="8" fill="#2d1f3d" stroke="#c084fc" stroke-width="1"/>
-  <text x="655" y="831" text-anchor="middle" fill="#e9d5ff" font-size="8" font-weight="600">5. Tool Mode</text>
-  <text x="655" y="845" text-anchor="middle" fill="#a78bfa" font-size="7">Sovereign / Composio</text>
-
-  <rect x="730" y="815" width="130" height="38" rx="8" fill="#2d1f3d" stroke="#c084fc" stroke-width="1"/>
-  <text x="795" y="831" text-anchor="middle" fill="#e9d5ff" font-size="8" font-weight="600">6. Personalize</text>
-  <text x="795" y="845" text-anchor="middle" fill="#a78bfa" font-size="7">name, style, timezone</text>
-
-  <rect x="870" y="815" width="130" height="38" rx="8" fill="#2d1f3d" stroke="#c084fc" stroke-width="1"/>
-  <text x="935" y="831" text-anchor="middle" fill="#e9d5ff" font-size="8" font-weight="600">7. Scaffold</text>
-  <text x="935" y="845" text-anchor="middle" fill="#a78bfa" font-size="7">8 workspace MD files</text>
-
-  <!-- Step arrows -->
-  <line x1="160" y1="834" x2="170" y2="834" stroke="#c084fc" stroke-width="1" marker-end="url(#arrowPurple)"/>
-  <line x1="300" y1="834" x2="310" y2="834" stroke="#c084fc" stroke-width="1" marker-end="url(#arrowPurple)"/>
-  <line x1="440" y1="834" x2="450" y2="834" stroke="#c084fc" stroke-width="1" marker-end="url(#arrowPurple)"/>
-  <line x1="580" y1="834" x2="590" y2="834" stroke="#c084fc" stroke-width="1" marker-end="url(#arrowPurple)"/>
-  <line x1="720" y1="834" x2="730" y2="834" stroke="#c084fc" stroke-width="1" marker-end="url(#arrowPurple)"/>
-  <line x1="860" y1="834" x2="870" y2="834" stroke="#c084fc" stroke-width="1" marker-end="url(#arrowPurple)"/>
-
-  <!-- Wizard output summary -->
-  <text x="550" y="872" text-anchor="middle" fill="#7d8590" font-size="9">Full summary: Provider, Model, Channels, Tunnel, Composio, Secrets, Gateway, Autonomy, Memory</text>
-
-  <!-- Ready badge -->
-  <rect x="380" y="888" width="340" height="28" rx="14" fill="#166534" stroke="#4ade80" stroke-width="1"/>
-  <text x="550" y="907" text-anchor="middle" fill="#4ade80" font-size="12" font-weight="600">Ready -- zeroclaw agent</text>
 
   <!-- Footer stats -->
   <text x="550" y="942" text-anchor="middle" fill="#7d8590" font-size="10">~3.4MB binary  |  &lt;10ms startup  |  1,050 tests  |  22+ providers  |  8 traits  |  18,900+ lines of Rust  |  0 clippy warnings</text>

@@ -1,6 +1,6 @@
 # One-Click Bootstrap
 
-This page defines the fastest supported path to install and initialize ZeroClaw.
+This page defines the fastest supported path to install ZeroClaw.
 
 Last verified: **April 12, 2026**.
 
@@ -23,7 +23,6 @@ What it does:
 1. Installs Rust via rustup if missing
 2. Validates Rust version against project MSRV
 3. `cargo install --path . --locked --force`
-4. Runs `zeroclaw onboard` (interactive setup wizard)
 
 ## Option B: Remote one-liner
 
@@ -56,7 +55,7 @@ To see all available features:
 Use `--prefix` to install everything into a scratch directory without touching your home:
 
 ```bash
-./install.sh --prefix /tmp/zc-test --skip-onboard
+./install.sh --prefix /tmp/zc-test
 /tmp/zc-test/.cargo/bin/zeroclaw --version
 
 # Clean up
@@ -68,14 +67,6 @@ Use `--dry-run` to preview what would happen without building:
 ```bash
 ./install.sh --dry-run --minimal --features agent-runtime,channel-discord
 ```
-
-## Skip onboarding
-
-```bash
-./install.sh --skip-onboard
-```
-
-Configure later with `zeroclaw onboard`.
 
 ## Uninstall
 

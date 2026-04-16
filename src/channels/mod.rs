@@ -1,6 +1,4 @@
 pub use zeroclaw_channels::orchestrator::*;
-#[cfg(feature = "channel-matrix")]
-pub mod matrix;
 #[cfg(feature = "channel-telegram")]
 pub mod telegram;
 pub mod session_backend {
@@ -31,34 +29,15 @@ pub async fn handle_command(command: crate::ChannelCommands, config: &Config) ->
                     channel.name()
                 );
             }
-            // Notion is a top-level config section, not part of ChannelsConfig
-            {
-                let notion_configured =
-                    config.notion.enabled && !config.notion.database_id.trim().is_empty();
-                println!("  {} Notion", if notion_configured { "✅" } else { "❌" });
-            }
-            if !cfg!(feature = "channel-matrix") {
-                println!(
-                    "  ℹ️ Matrix channel support is disabled in this build (enable `channel-matrix`)."
-                );
-            }
-            if !cfg!(feature = "channel-lark") {
-                println!(
-                    "  ℹ️ Lark/Feishu channel support is disabled in this build (enable `channel-lark`)."
-                );
-            }
             println!("\nTo start channels: zeroclaw channel start");
             println!("To check health:    zeroclaw channel doctor");
-            println!("To configure:      zeroclaw onboard");
             Ok(())
         }
         crate::ChannelCommands::Add {
             channel_type,
             config: _,
         } => {
-            anyhow::bail!(
-                "Channel type '{channel_type}' — use `zeroclaw onboard` to configure channels"
-            );
+            anyhow::bail!("Channel type '{channel_type}' — edit config.toml to configure channels");
         }
         crate::ChannelCommands::Remove { name } => {
             anyhow::bail!("Remove channel '{name}' — edit ~/.zeroclaw/config.toml directly");

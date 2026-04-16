@@ -16,16 +16,10 @@ Last reviewed: **February 18, 2026**.
 | Doc | Type | Audience |
 |---|---|---|
 | `README.md` | Current Guide | all readers |
-| `README.zh-CN.md` | Current Guide (localized) | Chinese readers |
-| `README.ja.md` | Current Guide (localized) | Japanese readers |
-| `README.ru.md` | Current Guide (localized) | Russian readers |
-| `README.vi.md` | Current Guide (localized) | Vietnamese readers |
 | `docs/README.md` | Current Guide (hub) | all readers |
-| `docs/README.zh-CN.md` | Current Guide (localized hub) | Chinese readers |
-| `docs/README.ja.md` | Current Guide (localized hub) | Japanese readers |
-| `docs/README.ru.md` | Current Guide (localized hub) | Russian readers |
-| `docs/README.vi.md` | Current Guide (localized hub) | Vietnamese readers |
 | `docs/SUMMARY.md` | Current Guide (unified TOC) | all readers |
+| `docs/i18n/ko/README.md` | Current Guide (localized) | Korean readers |
+| `docs/i18n/ko/SUMMARY.md` | Current Guide (localized TOC) | Korean readers |
 | `docs/structure/README.md` | Current Guide (structure map) | all readers |
 
 ## Collection Index Docs
@@ -36,7 +30,6 @@ Last reviewed: **February 18, 2026**.
 | `docs/reference/README.md` | Current Guide | users/operators |
 | `docs/operations/README.md` | Current Guide | operators |
 | `docs/security/README.md` | Current Guide | operators/contributors |
-| `docs/hardware/README.md` | Current Guide | hardware builders |
 | `docs/contributing/README.md` | Current Guide | contributors/reviewers |
 | `docs/project/README.md` | Current Guide | maintainers |
 
@@ -51,19 +44,10 @@ Last reviewed: **February 18, 2026**.
 | `docs/nextcloud-talk-setup.md` | Current Guide | operators |
 | `docs/config-reference.md` | Current Reference | operators |
 | `docs/custom-providers.md` | Current Integration Guide | integration developers |
-| `docs/zai-glm-setup.md` | Current Provider Setup Guide | users/operators |
 | `docs/langgraph-integration.md` | Current Integration Guide | integration developers |
 | `docs/operations-runbook.md` | Current Guide | operators |
 | `docs/troubleshooting.md` | Current Guide | users/operators |
-| `docs/network-deployment.md` | Current Guide | operators |
 | `docs/mattermost-setup.md` | Current Guide | operators |
-| `docs/adding-boards-and-tools.md` | Current Guide | hardware builders |
-| `docs/arduino-uno-q-setup.md` | Current Guide | hardware builders |
-| `docs/nucleo-setup.md` | Current Guide | hardware builders |
-| `docs/hardware-peripherals-design.md` | Current Design Spec | hardware contributors |
-| `docs/datasheets/nucleo-f401re.md` | Current Hardware Reference | hardware builders |
-| `docs/datasheets/arduino-uno.md` | Current Hardware Reference | hardware builders |
-| `docs/datasheets/esp32.md` | Current Hardware Reference | hardware builders |
 
 ## Policy / Process Docs
 
@@ -80,11 +64,8 @@ These are valuable context, but **not strict runtime contracts**.
 
 | Doc | Type |
 |---|---|
-| `docs/sandboxing.md` | Proposal |
 | `docs/resource-limits.md` | Proposal |
 | `docs/audit-logging.md` | Proposal |
-| `docs/agnostic-security.md` | Proposal |
-| `docs/frictionless-security.md` | Proposal |
 | `docs/security-roadmap.md` | Roadmap |
 
 ## Snapshot Docs

@@ -159,7 +159,6 @@ Solution: Check user allowlist
   1. Send message to bot
   2. Check logs for user_id
   3. Update config: allowed_users = ["YOUR_ID"]
-  4. Run: zeroclaw onboard --channels-only
 ```
 
 **Issue: Message splitting not working**
@@ -178,11 +177,6 @@ Solution: Verify code changes
 # 1. Run automated tests
 ./tests/telegram/test_telegram_integration.sh
 
-# 2. Configure Telegram
-zeroclaw onboard
-# Select Telegram channel
-# Enter bot token (from @BotFather)
-# Enter your user ID
 
 # 3. Verify health
 zeroclaw channel doctor

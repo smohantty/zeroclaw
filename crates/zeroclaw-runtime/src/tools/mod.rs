@@ -35,7 +35,6 @@ pub mod sop_approve;
 pub mod sop_execute;
 pub mod sop_list;
 pub mod sop_status;
-pub mod verifiable_intent;
 
 // Tool types from zeroclaw-tools (direct imports, no shims)
 pub use zeroclaw_tools::ask_user::AskUserTool;
@@ -45,34 +44,19 @@ pub use zeroclaw_tools::browser::{BrowserTool, ComputerUseConfig};
 pub use zeroclaw_tools::browser_delegate::BrowserDelegateTool;
 pub use zeroclaw_tools::browser_open::BrowserOpenTool;
 pub use zeroclaw_tools::calculator::CalculatorTool;
-pub use zeroclaw_tools::canvas::{ALLOWED_CONTENT_TYPES, MAX_CONTENT_SIZE};
-pub use zeroclaw_tools::canvas::{CanvasStore, CanvasTool};
-pub use zeroclaw_tools::claude_code::ClaudeCodeTool;
 pub use zeroclaw_tools::claude_code_runner::ClaudeCodeRunnerTool;
 pub use zeroclaw_tools::cli_discovery::{DiscoveredCli, discover_cli_tools};
-pub use zeroclaw_tools::cloud_ops::CloudOpsTool;
-pub use zeroclaw_tools::cloud_patterns::CloudPatternsTool;
 pub use zeroclaw_tools::codex_cli::CodexCliTool;
-pub use zeroclaw_tools::composio::ComposioTool;
 pub use zeroclaw_tools::content_search::ContentSearchTool;
 pub use zeroclaw_tools::data_management::DataManagementTool;
-pub use zeroclaw_tools::discord_search::DiscordSearchTool;
 pub use zeroclaw_tools::escalate::EscalateToHumanTool;
 pub use zeroclaw_tools::file_edit::FileEditTool;
 pub use zeroclaw_tools::file_write::FileWriteTool;
-pub use zeroclaw_tools::gemini_cli::GeminiCliTool;
-pub use zeroclaw_tools::git_operations::GitOperationsTool;
 pub use zeroclaw_tools::glob_search::GlobSearchTool;
-pub use zeroclaw_tools::google_workspace::GoogleWorkspaceTool;
-pub use zeroclaw_tools::hardware_board_info::HardwareBoardInfoTool;
-pub use zeroclaw_tools::hardware_memory_map::HardwareMemoryMapTool;
-pub use zeroclaw_tools::hardware_memory_read::HardwareMemoryReadTool;
 pub use zeroclaw_tools::http_request::HttpRequestTool;
 pub use zeroclaw_tools::image_gen::ImageGenTool;
 pub use zeroclaw_tools::image_info::ImageInfoTool;
-pub use zeroclaw_tools::jira_tool::JiraTool;
 pub use zeroclaw_tools::knowledge_tool::KnowledgeTool;
-pub use zeroclaw_tools::linkedin::LinkedInTool;
 pub use zeroclaw_tools::llm_task::LlmTaskTool;
 pub use zeroclaw_tools::mcp_client::McpRegistry;
 pub use zeroclaw_tools::mcp_deferred::{
@@ -84,23 +68,16 @@ pub use zeroclaw_tools::memory_forget::MemoryForgetTool;
 pub use zeroclaw_tools::memory_purge::MemoryPurgeTool;
 pub use zeroclaw_tools::memory_recall::MemoryRecallTool;
 pub use zeroclaw_tools::memory_store::MemoryStoreTool;
-pub use zeroclaw_tools::microsoft365::Microsoft365Tool;
 pub use zeroclaw_tools::model_routing_config::ModelRoutingConfigTool;
-pub use zeroclaw_tools::notion_tool::NotionTool;
-pub use zeroclaw_tools::opencode_cli::OpenCodeCliTool;
 #[cfg(feature = "rag-pdf")]
 pub use zeroclaw_tools::pdf_read::PdfReadTool;
 pub use zeroclaw_tools::pipeline::PipelineTool;
-pub use zeroclaw_tools::poll::PollTool;
-pub use zeroclaw_tools::project_intel::ProjectIntelTool;
 pub use zeroclaw_tools::proxy_config::ProxyConfigTool;
 pub use zeroclaw_tools::pushover::PushoverTool;
 pub use zeroclaw_tools::reaction::ReactionTool;
-pub use zeroclaw_tools::report_template_tool::ReportTemplateTool;
 pub use zeroclaw_tools::screenshot::ScreenshotTool;
 pub use zeroclaw_tools::sessions::{SessionsHistoryTool, SessionsListTool, SessionsSendTool};
 pub use zeroclaw_tools::swarm::SwarmTool;
-pub use zeroclaw_tools::text_browser::TextBrowserTool;
 pub use zeroclaw_tools::tool_search::ToolSearchTool;
 pub use zeroclaw_tools::weather_tool::WeatherTool;
 pub use zeroclaw_tools::web_fetch::WebFetchTool;
@@ -133,7 +110,6 @@ pub use sop_approve::SopApproveTool;
 pub use sop_execute::SopExecuteTool;
 pub use sop_list::SopListTool;
 pub use sop_status::SopStatusTool;
-pub use verifiable_intent::VerifiableIntentTool;
 
 use crate::platform::{NativeRuntime, RuntimeAdapter};
 use crate::security::{SecurityPolicy, create_sandbox};
@@ -255,7 +231,7 @@ pub fn register_skill_tools(
     }
 }
 
-/// Create full tool registry including memory tools and optional Composio
+/// Create full tool registry including memory tools.
 #[allow(
     clippy::implicit_hasher,
     clippy::too_many_arguments,
@@ -265,8 +241,6 @@ pub fn all_tools(
     config: Arc<Config>,
     security: &Arc<SecurityPolicy>,
     memory: Arc<dyn Memory>,
-    composio_key: Option<&str>,
-    composio_entity_id: Option<&str>,
     browser_config: &zeroclaw_config::schema::BrowserConfig,
     http_config: &zeroclaw_config::schema::HttpRequestConfig,
     web_fetch_config: &zeroclaw_config::schema::WebFetchConfig,
@@ -274,7 +248,6 @@ pub fn all_tools(
     agents: &HashMap<String, DelegateAgentConfig>,
     fallback_api_key: Option<&str>,
     root_config: &zeroclaw_config::schema::Config,
-    canvas_store: Option<CanvasStore>,
 ) -> (
     Vec<Box<dyn Tool>>,
     Option<DelegateParentToolsHandle>,
@@ -288,8 +261,6 @@ pub fn all_tools(
         security,
         Arc::new(NativeRuntime::new()),
         memory,
-        composio_key,
-        composio_entity_id,
         browser_config,
         http_config,
         web_fetch_config,
@@ -297,11 +268,10 @@ pub fn all_tools(
         agents,
         fallback_api_key,
         root_config,
-        canvas_store,
     )
 }
 
-/// Create full tool registry including memory tools and optional Composio.
+/// Create full tool registry including memory tools.
 #[allow(
     clippy::implicit_hasher,
     clippy::too_many_arguments,
@@ -312,8 +282,6 @@ pub fn all_tools_with_runtime(
     security: &Arc<SecurityPolicy>,
     runtime: Arc<dyn RuntimeAdapter>,
     memory: Arc<dyn Memory>,
-    composio_key: Option<&str>,
-    composio_entity_id: Option<&str>,
     browser_config: &zeroclaw_config::schema::BrowserConfig,
     http_config: &zeroclaw_config::schema::HttpRequestConfig,
     web_fetch_config: &zeroclaw_config::schema::WebFetchConfig,
@@ -321,7 +289,6 @@ pub fn all_tools_with_runtime(
     agents: &HashMap<String, DelegateAgentConfig>,
     fallback_api_key: Option<&str>,
     root_config: &zeroclaw_config::schema::Config,
-    canvas_store: Option<CanvasStore>,
 ) -> (
     Vec<Box<dyn Tool>>,
     Option<DelegateParentToolsHandle>,
@@ -364,30 +331,13 @@ pub fn all_tools_with_runtime(
         )),
         Arc::new(ModelSwitchTool::new(security.clone())),
         Arc::new(ProxyConfigTool::new(config.clone(), security.clone())),
-        Arc::new(GitOperationsTool::new(
-            security.clone(),
-            workspace_dir.to_path_buf(),
-        )),
         Arc::new(PushoverTool::new(
             security.clone(),
             workspace_dir.to_path_buf(),
         )),
         Arc::new(CalculatorTool::new()),
         Arc::new(WeatherTool::new()),
-        Arc::new(CanvasTool::new(canvas_store.unwrap_or_default())),
     ];
-
-    // Register discord_search if discord_history channel is configured
-    if root_config.channels.discord_history.is_some() {
-        match zeroclaw_memory::SqliteMemory::new_named(workspace_dir, "discord") {
-            Ok(discord_mem) => {
-                tool_arcs.push(Arc::new(DiscordSearchTool::new(Arc::new(discord_mem))));
-            }
-            Err(e) => {
-                tracing::warn!("discord_search: failed to open discord.db: {e}");
-            }
-        }
-    }
 
     // LLM task tool — always registered when a provider is configured
     {
@@ -395,7 +345,7 @@ pub fn all_tools_with_runtime(
             .providers
             .fallback
             .clone()
-            .unwrap_or_else(|| "openrouter".to_string());
+            .unwrap_or_else(|| "openai".to_string());
         let llm_task_model = root_config
             .providers
             .fallback_provider()
@@ -494,15 +444,6 @@ pub fn all_tools_with_runtime(
         )));
     }
 
-    // Text browser tool (headless text-based browser rendering)
-    if root_config.text_browser.enabled {
-        tool_arcs.push(Arc::new(TextBrowserTool::new(
-            security.clone(),
-            root_config.text_browser.preferred_browser.clone(),
-            root_config.text_browser.timeout_secs,
-        )));
-    }
-
     // Web search tool (enabled by default for GLM and other models)
     if root_config.web_search.enabled {
         tool_arcs.push(Arc::new(WebSearchTool::new_with_config(
@@ -514,59 +455,6 @@ pub fn all_tools_with_runtime(
             root_config.config_path.clone(),
             root_config.secrets.encrypt,
         )));
-    }
-
-    // Notion API tool (conditionally registered)
-    if root_config.notion.enabled {
-        let notion_api_key = if root_config.notion.api_key.trim().is_empty() {
-            std::env::var("NOTION_API_KEY").unwrap_or_default()
-        } else {
-            root_config.notion.api_key.trim().to_string()
-        };
-        if notion_api_key.trim().is_empty() {
-            tracing::warn!(
-                "Notion tool enabled but no API key found (set notion.api_key or NOTION_API_KEY env var)"
-            );
-        } else {
-            tool_arcs.push(Arc::new(NotionTool::new(notion_api_key, security.clone())));
-        }
-    }
-
-    // Jira integration (config-gated)
-    if root_config.jira.enabled {
-        let api_token = if root_config.jira.api_token.trim().is_empty() {
-            std::env::var("JIRA_API_TOKEN").unwrap_or_default()
-        } else {
-            root_config.jira.api_token.trim().to_string()
-        };
-        if api_token.trim().is_empty() {
-            tracing::warn!(
-                "Jira tool enabled but no API token found (set jira.api_token or JIRA_API_TOKEN env var)"
-            );
-        } else if root_config.jira.base_url.trim().is_empty() {
-            tracing::warn!("Jira tool enabled but jira.base_url is empty — skipping registration");
-        } else if root_config.jira.email.trim().is_empty() {
-            tracing::warn!("Jira tool enabled but jira.email is empty — skipping registration");
-        } else {
-            tool_arcs.push(Arc::new(JiraTool::new(
-                root_config.jira.base_url.trim().to_string(),
-                root_config.jira.email.trim().to_string(),
-                api_token,
-                root_config.jira.allowed_actions.clone(),
-                security.clone(),
-                root_config.jira.timeout_secs,
-            )));
-        }
-    }
-
-    // Project delivery intelligence
-    if root_config.project_intel.enabled {
-        tool_arcs.push(Arc::new(ProjectIntelTool::new(
-            root_config.project_intel.default_language.clone(),
-            root_config.project_intel.risk_sensitivity.clone(),
-        )));
-        // Report template tool — direct access to template engine
-        tool_arcs.push(Arc::new(ReportTemplateTool::new()));
     }
 
     // MCSS Security Operations
@@ -593,38 +481,6 @@ pub fn all_tools_with_runtime(
         )));
     }
 
-    // Cloud operations advisory tools (read-only analysis)
-    if root_config.cloud_ops.enabled {
-        tool_arcs.push(Arc::new(CloudOpsTool::new(root_config.cloud_ops.clone())));
-        tool_arcs.push(Arc::new(CloudPatternsTool::new()));
-    }
-
-    // Google Workspace CLI (gws) integration — requires shell access
-    if root_config.google_workspace.enabled && has_shell_access {
-        tool_arcs.push(Arc::new(GoogleWorkspaceTool::new(
-            security.clone(),
-            root_config.google_workspace.allowed_services.clone(),
-            root_config.google_workspace.allowed_operations.clone(),
-            root_config.google_workspace.credentials_path.clone(),
-            root_config.google_workspace.default_account.clone(),
-            root_config.google_workspace.rate_limit_per_minute,
-            root_config.google_workspace.timeout_secs,
-            root_config.google_workspace.audit_log,
-        )));
-    } else if root_config.google_workspace.enabled {
-        tracing::warn!(
-            "google_workspace: skipped registration because shell access is unavailable"
-        );
-    }
-
-    // Claude Code delegation tool
-    if root_config.claude_code.enabled {
-        tool_arcs.push(Arc::new(ClaudeCodeTool::new(
-            security.clone(),
-            root_config.claude_code.clone(),
-        )));
-    }
-
     // Claude Code task runner with Slack progress and SSH handoff
     if root_config.claude_code_runner.enabled {
         let gateway_url = format!(
@@ -643,22 +499,6 @@ pub fn all_tools_with_runtime(
         tool_arcs.push(Arc::new(CodexCliTool::new(
             security.clone(),
             root_config.codex_cli.clone(),
-        )));
-    }
-
-    // Gemini CLI delegation tool
-    if root_config.gemini_cli.enabled {
-        tool_arcs.push(Arc::new(GeminiCliTool::new(
-            security.clone(),
-            root_config.gemini_cli.clone(),
-        )));
-    }
-
-    // OpenCode CLI delegation tool
-    if root_config.opencode_cli.enabled {
-        tool_arcs.push(Arc::new(OpenCodeCliTool::new(
-            security.clone(),
-            root_config.opencode_cli.clone(),
         )));
     }
 
@@ -682,17 +522,6 @@ pub fn all_tools_with_runtime(
         tool_arcs.push(Arc::new(SessionsSendTool::new(backend, security.clone())));
     }
 
-    // LinkedIn integration (config-gated)
-    if root_config.linkedin.enabled {
-        tool_arcs.push(Arc::new(LinkedInTool::new(
-            security.clone(),
-            workspace_dir.to_path_buf(),
-            root_config.linkedin.api_version.clone(),
-            root_config.linkedin.content.clone(),
-            root_config.linkedin.image.clone(),
-        )));
-    }
-
     // Standalone image generation tool (config-gated)
     if root_config.image_gen.enabled {
         tool_arcs.push(Arc::new(ImageGenTool::new(
@@ -703,12 +532,7 @@ pub fn all_tools_with_runtime(
         )));
     }
 
-    // Poll tool — always registered; uses late-bound channel map handle
     let channel_map_handle: ChannelMapHandle = Arc::new(RwLock::new(HashMap::new()));
-    tool_arcs.push(Arc::new(PollTool::new(
-        security.clone(),
-        Arc::clone(&channel_map_handle),
-    )));
 
     // SOP tools (registered when sops_dir is configured)
     if root_config.sop.sops_dir.is_some() {
@@ -720,16 +544,6 @@ pub fn all_tools_with_runtime(
         tool_arcs.push(Arc::new(SopAdvanceTool::new(Arc::clone(&sop_engine))));
         tool_arcs.push(Arc::new(SopApproveTool::new(Arc::clone(&sop_engine))));
         tool_arcs.push(Arc::new(SopStatusTool::new(Arc::clone(&sop_engine))));
-    }
-
-    if let Some(key) = composio_key
-        && !key.is_empty()
-    {
-        tool_arcs.push(Arc::new(ComposioTool::new(
-            key,
-            composio_entity_id,
-            security.clone(),
-        )));
     }
 
     // Emoji reaction tool — always registered; channel map populated later by start_channels.
@@ -746,68 +560,6 @@ pub fn all_tools_with_runtime(
     let escalate_tool = EscalateToHumanTool::new(security.clone(), workspace_dir.to_path_buf());
     let escalate_handle = escalate_tool.channel_map_handle();
     tool_arcs.push(Arc::new(escalate_tool));
-
-    // Microsoft 365 Graph API integration
-    if root_config.microsoft365.enabled {
-        let ms_cfg = &root_config.microsoft365;
-        let tenant_id = ms_cfg
-            .tenant_id
-            .as_deref()
-            .unwrap_or_default()
-            .trim()
-            .to_string();
-        let client_id = ms_cfg
-            .client_id
-            .as_deref()
-            .unwrap_or_default()
-            .trim()
-            .to_string();
-        if !tenant_id.is_empty() && !client_id.is_empty() {
-            // Fail fast: client_credentials flow requires a client_secret at registration time.
-            if ms_cfg.auth_flow.trim() == "client_credentials"
-                && ms_cfg
-                    .client_secret
-                    .as_deref()
-                    .is_none_or(|s| s.trim().is_empty())
-            {
-                tracing::error!(
-                    "microsoft365: client_credentials auth_flow requires a non-empty client_secret"
-                );
-                return (
-                    boxed_registry_from_arcs(tool_arcs),
-                    None,
-                    Some(reaction_handle),
-                    channel_map_handle,
-                    Some(ask_user_handle),
-                    Some(escalate_handle),
-                );
-            }
-
-            let resolved = zeroclaw_tools::microsoft365::types::Microsoft365ResolvedConfig {
-                tenant_id,
-                client_id,
-                client_secret: ms_cfg.client_secret.clone(),
-                auth_flow: ms_cfg.auth_flow.clone(),
-                scopes: ms_cfg.scopes.clone(),
-                token_cache_encrypted: ms_cfg.token_cache_encrypted,
-                user_id: ms_cfg.user_id.as_deref().unwrap_or("me").to_string(),
-            };
-            // Store token cache in the config directory (next to config.toml),
-            // not the workspace directory, to keep bearer tokens out of the
-            // project tree.
-            let cache_dir = root_config.config_path.parent().unwrap_or(workspace_dir);
-            match Microsoft365Tool::new(resolved, security.clone(), cache_dir) {
-                Ok(tool) => tool_arcs.push(Arc::new(tool)),
-                Err(e) => {
-                    tracing::error!("microsoft365: failed to initialize tool: {e}");
-                }
-            }
-        } else {
-            tracing::warn!(
-                "microsoft365: skipped registration because tenant_id or client_id is empty"
-            );
-        }
-    }
 
     // Knowledge graph tool
     if root_config.knowledge.enabled {
@@ -891,18 +643,6 @@ pub fn all_tools_with_runtime(
         tool_arcs.push(Arc::new(WorkspaceTool::new(
             Arc::new(tokio::sync::RwLock::new(ws_manager)),
             security.clone(),
-        )));
-    }
-
-    // Verifiable Intent tool (opt-in via config)
-    if root_config.verifiable_intent.enabled {
-        let strictness = match root_config.verifiable_intent.strictness.as_str() {
-            "permissive" => crate::verifiable_intent::StrictnessMode::Permissive,
-            _ => crate::verifiable_intent::StrictnessMode::Strict,
-        };
-        tool_arcs.push(Arc::new(VerifiableIntentTool::new(
-            security.clone(),
-            strictness,
         )));
     }
 
@@ -1017,8 +757,6 @@ mod tests {
             Arc::new(Config::default()),
             &security,
             mem,
-            None,
-            None,
             &browser,
             &http,
             &zeroclaw_config::schema::WebFetchConfig::default(),
@@ -1026,7 +764,6 @@ mod tests {
             &HashMap::new(),
             None,
             &cfg,
-            None,
         );
         let names: Vec<&str> = tools.iter().map(|t| t.name()).collect();
         assert!(!names.contains(&"browser_open"));
@@ -1060,8 +797,6 @@ mod tests {
             Arc::new(Config::default()),
             &security,
             mem,
-            None,
-            None,
             &browser,
             &http,
             &zeroclaw_config::schema::WebFetchConfig::default(),
@@ -1069,7 +804,6 @@ mod tests {
             &HashMap::new(),
             None,
             &cfg,
-            None,
         );
         let names: Vec<&str> = tools.iter().map(|t| t.name()).collect();
         assert!(names.contains(&"browser_open"));
@@ -1215,8 +949,6 @@ mod tests {
             Arc::new(Config::default()),
             &security,
             mem,
-            None,
-            None,
             &browser,
             &http,
             &zeroclaw_config::schema::WebFetchConfig::default(),
@@ -1224,7 +956,6 @@ mod tests {
             &agents,
             Some("delegate-test-credential"),
             &cfg,
-            None,
         );
         let names: Vec<&str> = tools.iter().map(|t| t.name()).collect();
         assert!(names.contains(&"delegate"));
@@ -1249,8 +980,6 @@ mod tests {
             Arc::new(Config::default()),
             &security,
             mem,
-            None,
-            None,
             &browser,
             &http,
             &zeroclaw_config::schema::WebFetchConfig::default(),
@@ -1258,7 +987,6 @@ mod tests {
             &HashMap::new(),
             None,
             &cfg,
-            None,
         );
         let names: Vec<&str> = tools.iter().map(|t| t.name()).collect();
         assert!(!names.contains(&"delegate"));
@@ -1285,8 +1013,6 @@ mod tests {
             Arc::new(cfg.clone()),
             &security,
             mem,
-            None,
-            None,
             &browser,
             &http,
             &zeroclaw_config::schema::WebFetchConfig::default(),
@@ -1294,7 +1020,6 @@ mod tests {
             &HashMap::new(),
             None,
             &cfg,
-            None,
         );
         let names: Vec<&str> = tools.iter().map(|t| t.name()).collect();
         assert!(names.contains(&"read_skill"));
@@ -1320,8 +1045,6 @@ mod tests {
             Arc::new(cfg.clone()),
             &security,
             mem,
-            None,
-            None,
             &browser,
             &http,
             &zeroclaw_config::schema::WebFetchConfig::default(),
@@ -1329,7 +1052,6 @@ mod tests {
             &HashMap::new(),
             None,
             &cfg,
-            None,
         );
         let names: Vec<&str> = tools.iter().map(|t| t.name()).collect();
         assert!(!names.contains(&"read_skill"));

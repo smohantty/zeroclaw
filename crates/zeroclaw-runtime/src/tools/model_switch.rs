@@ -223,12 +223,6 @@ impl ModelSwitchTool {
                 "claude-3-opus",
                 "claude-3-haiku",
             ],
-            "openrouter" => vec![
-                "anthropic/claude-sonnet-4-6",
-                "openai/gpt-4o",
-                "google/gemini-pro",
-                "meta-llama/llama-3-70b-instruct",
-            ],
             "groq" => vec![
                 "llama-3.3-70b-versatile",
                 "mixtral-8x7b-32768",

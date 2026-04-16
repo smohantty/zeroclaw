@@ -53,8 +53,8 @@ Merge-blocking checks should stay small and deterministic. Optional checks are u
 - `.github/workflows/pr-labeler.yml` (`PR Labeler`)
     - Purpose: scope/path labels + size/risk labels + fine-grained module labels (`<module>: <component>`)
     - Additional behavior: label descriptions are auto-managed as hover tooltips to explain each auto-judgment rule
-    - Additional behavior: provider-related keywords in provider/config/onboard/integration changes are promoted to `provider:*` labels (for example `provider:kimi`, `provider:deepseek`)
-    - Additional behavior: hierarchical de-duplication keeps only the most specific scope labels (for example `tool:composio` suppresses `tool:core` and `tool`)
+    - Additional behavior: provider-related keywords in provider/config/integration changes are promoted to `provider:*` labels (for example `provider:kimi`, `provider:deepseek`)
+    - Additional behavior: hierarchical de-duplication keeps only the most specific scope labels
     - Additional behavior: module namespaces are compacted — one specific module keeps `prefix:component`; multiple specifics collapse to just `prefix`
     - Additional behavior: applies contributor tiers on PRs by merged PR count (`trusted` >=5, `experienced` >=10, `principal` >=20, `distinguished` >=50)
     - Additional behavior: final label set is priority-sorted (`risk:*` first, then `size:*`, then contributor tier, then module/path labels)
@@ -64,7 +64,7 @@ Merge-blocking checks should stay small and deterministic. Optional checks are u
     - High-risk heuristic paths: `src/security/**`, `src/runtime/**`, `src/gateway/**`, `src/tools/**`, `.github/workflows/**`
     - Guardrail: maintainers can apply `risk: manual` to freeze automated risk recalculation
 - `.github/workflows/pr-auto-response.yml` (`PR Auto Responder`)
-    - Purpose: first-time contributor onboarding + label-driven response routing (`r:support`, `r:needs-repro`, etc.)
+    - Purpose: first-time contributor response routing (`r:support`, `r:needs-repro`, etc.)
     - Additional behavior: applies contributor tiers on issues by merged PR count (`trusted` >=5, `experienced` >=10, `principal` >=20, `distinguished` >=50), matching PR tier thresholds exactly
     - Additional behavior: contributor-tier labels are treated as automation-managed (manual add/remove on PR/issue is auto-corrected)
     - Guardrail: label-based close routes are issue-only; PRs are never auto-closed by route labels
@@ -123,7 +123,7 @@ Merge-blocking checks should stay small and deterministic. Optional checks are u
 - Use path filters for expensive workflows when practical.
 - Keep docs quality checks low-noise (incremental markdown + incremental added-link checks).
 - Keep dependency update volume controlled (grouping + PR limits).
-- Avoid mixing onboarding/community automation with merge-gating logic.
+- Avoid mixing community automation with merge-gating logic.
 - Test levels: `cargo test --test component`, `cargo test --test integration`, `cargo test --test system`.
 - Live tests (manual only): `cargo test --test live -- --ignored`.
 

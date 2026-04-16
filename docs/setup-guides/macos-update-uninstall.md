@@ -34,7 +34,7 @@ From your local repository checkout:
 
 ```bash
 git pull --ff-only
-./install.sh --skip-onboard
+./install.sh
 zeroclaw --version
 ```
 

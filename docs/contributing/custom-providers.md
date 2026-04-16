@@ -72,7 +72,6 @@ default_temperature = 0.7
 Quick validation:
 
 ```bash
-zeroclaw models refresh --provider llamacpp
 zeroclaw agent -m "hello"
 ```
 
@@ -103,7 +102,6 @@ default_temperature = 0.7
 Quick validation:
 
 ```bash
-zeroclaw models refresh --provider sglang
 zeroclaw agent -m "hello"
 ```
 
@@ -134,7 +132,6 @@ default_temperature = 0.7
 Quick validation:
 
 ```bash
-zeroclaw models refresh --provider vllm
 zeroclaw agent -m "hello"
 ```
 

@@ -245,46 +245,15 @@
       - any-glob-to-any-file:
           - "src/providers/anthropic.rs"
 
-"provider:azure-openai":
-  - changed-files:
-      - any-glob-to-any-file:
-          - "src/providers/azure_openai.rs"
-
-"provider:bedrock":
-  - changed-files:
-      - any-glob-to-any-file:
-          - "src/providers/bedrock.rs"
-
-"provider:claude-code":
-  - changed-files:
-      - any-glob-to-any-file:
-          - "src/providers/claude_code.rs"
-
 "provider:compatible":
   - changed-files:
       - any-glob-to-any-file:
           - "src/providers/compatible.rs"
 
-"provider:copilot":
-  - changed-files:
-      - any-glob-to-any-file:
-          - "src/providers/copilot.rs"
-
 "provider:gemini":
   - changed-files:
       - any-glob-to-any-file:
           - "src/providers/gemini.rs"
-          - "src/providers/gemini_cli.rs"
-
-"provider:glm":
-  - changed-files:
-      - any-glob-to-any-file:
-          - "src/providers/glm.rs"
-
-"provider:kilocli":
-  - changed-files:
-      - any-glob-to-any-file:
-          - "src/providers/kilocli.rs"
 
 "provider:ollama":
   - changed-files:
@@ -296,16 +265,6 @@
       - any-glob-to-any-file:
           - "src/providers/openai.rs"
           - "src/providers/openai_codex.rs"
-
-"provider:openrouter":
-  - changed-files:
-      - any-glob-to-any-file:
-          - "src/providers/openrouter.rs"
-
-"provider:telnyx":
-  - changed-files:
-      - any-glob-to-any-file:
-          - "src/providers/telnyx.rs"
 
 "service":
   - changed-files:
@@ -333,13 +292,7 @@
           - "src/tools/browser.rs"
           - "src/tools/browser_delegate.rs"
           - "src/tools/browser_open.rs"
-          - "src/tools/text_browser.rs"
           - "src/tools/screenshot.rs"
-
-"tool:composio":
-  - changed-files:
-      - any-glob-to-any-file:
-          - "src/tools/composio.rs"
 
 "tool:cron":
   - changed-files:
@@ -360,11 +313,6 @@
           - "src/tools/glob_search.rs"
           - "src/tools/content_search.rs"
 
-"tool:google-workspace":
-  - changed-files:
-      - any-glob-to-any-file:
-          - "src/tools/google_workspace.rs"
-
 "tool:mcp":
   - changed-files:
       - any-glob-to-any-file:
@@ -380,11 +328,6 @@
           - "src/tools/memory_forget.rs"
           - "src/tools/memory_recall.rs"
           - "src/tools/memory_store.rs"
-
-"tool:microsoft365":
-  - changed-files:
-      - any-glob-to-any-file:
-          - "src/tools/microsoft365/**"
 
 "tool:shell":
   - changed-files:
@@ -414,13 +357,6 @@
   - changed-files:
       - any-glob-to-any-file:
           - "src/tools/security_ops.rs"
-          - "src/tools/verifiable_intent.rs"
-
-"tool:cloud":
-  - changed-files:
-      - any-glob-to-any-file:
-          - "src/tools/cloud_ops.rs"
-          - "src/tools/cloud_patterns.rs"
 
 "tunnel":
   - changed-files:

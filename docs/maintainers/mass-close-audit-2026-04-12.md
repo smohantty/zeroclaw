@@ -61,7 +61,6 @@ Only the 9 MATCHED_MERGED issues were arguably correct to close, though even tho
 | 4878 | E2EE recovery never downloads room keys | #5097 | Open |
 | 4879 | Gemini CLI OAuth not working | #5106 | Open; also #5314 |
 | 4880 | context_compression not triggered in daemon mode | #5085 | Open |
-| 4896 | Anthropic-compatible endpoints in onboarding | #5105 | Open |
 | 4916 | auto_save recursive snowball | #4936 | Open; #5664 merged for cron subset |
 | 4955 | Hardcoded third-party repo for open-skills | #5103 | Open |
 | 5122 | allowed_private_hosts useless for DNS | #5136 | Open |
@@ -88,7 +87,6 @@ Only the 9 MATCHED_MERGED issues were arguably correct to close, though even tho
 | 5583 | Docker.debian image fails to build | #5592 | Open; also #5545 |
 | 5604 | Mattermost private messages | #5602 | Open |
 | 5617 | Phase 2 D5: Reduce all_tools_with_runtime | #5566 | Open |
-| 5619 | Native OpenRouter provider routing support | #5623 | Open; #5621 closed |
 | 5629 | api_key falsely warned as unknown config key | #5673 | Open |
 | 5634 | Web dashboard creates new session on every page load | #5641 | Open |
 | 5654 | encryption for telegrom token not working | #5669 | Open |
@@ -102,7 +100,6 @@ Only the 9 MATCHED_MERGED issues were arguably correct to close, though even tho
 | 4710 | A better LOGO of Zeroclaw | Design request; no PR |
 | 4866 | Web dashboard is still not available | #5365 tangential (packaging); core complaint unresolved |
 | 5318 | stream_mode Partial: hide thinking content | Feature request; no PR |
-| 5356 | Canvas tool writes to separate CanvasStore | No PR addresses this |
 | 5447 | Crate split the crate | Feature request; workspace split happened but no dedicated PR |
 | 5501 | Trigger cron manually | Feature request; no PR |
 | 5502 | Add allowed_tools configuration to AgentConfig | No new PR matches |

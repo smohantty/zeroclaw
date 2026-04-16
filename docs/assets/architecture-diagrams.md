@@ -10,16 +10,12 @@ This document provides visual representations of ZeroClaw's architecture, execut
 
 ```mermaid
 flowchart TD
-    Start[zeroclaw CLI] --> Onboard[onboard<br/>Setup wizard]
     Start --> Agent[agent<br/>Interactive CLI]
     Start --> Gateway[gateway<br/>HTTP server]
     Start --> Daemon[daemon<br/>Long-running runtime]
     Start --> Channel[channel<br/>Messaging platforms]
     Start --> Service[service<br/>OS service mgmt]
-    Start --> Models[models<br/>Provider catalog]
     Start --> Cron[cron<br/>Scheduled tasks]
-    Start --> Hardware[hardware<br/>Peripheral discovery]
-    Start --> Peripheral[peripheral<br/>Hardware management]
     Start --> Status[status<br/>System overview]
     Start --> Doctor[doctor<br/>Diagnostics]
     Start --> Migrate[migrate<br/>Data import]
@@ -55,17 +51,13 @@ flowchart TB
         Runtime[runtime/<br/>Execution Adapters]
         Gateway[gateway/<br/>HTTP/Webhook Server]
         Daemon[daemon/<br/>Supervised Runtime]
-        Peripherals[peripherals/<br/>Hardware Control]
         Observability[observability/<br/>Telemetry & Metrics]
-        RAG[rag/<br/>Hardware Documentation]
         Cron[cron/<br/>Scheduler]
         Skills[skills/<br/>User Capabilities]
     end
 
     subgraph Integrations[Integrations]
-        Composio[Composio<br/>1000+ Apps]
         Browser[Browser<br/>Brave Integration]
-        Tunnel[Tunnel<br/>Cloudflare/boringproxy]
     end
 
     Main --> Config
@@ -91,16 +83,14 @@ flowchart TB
     Daemon --> Cron
     Daemon --> Observability
 
-    Tools --> Composio
     Tools --> Browser
-    Gateway --> Tunnel
 
     classDef coreComp fill:#4A90E2,stroke:#1E3A5F,color:#fff
     classDef integComp fill:#50C878,stroke:#1E3A5F,color:#fff
     classDef cliComp fill:#F5A623,stroke:#1E3A5F,color:#fff
 
     class Config,Agent,Providers,Channels,Tools,Memory,Security,Runtime,Gateway,Daemon,Peripherals,Observability,RAG,Cron,Skills coreComp
-    class Composio,Browser,Tunnel integComp
+    class Browser integComp
     class Main cliComp
 ```
 
@@ -197,7 +187,7 @@ flowchart TD
     classDef toolStep fill:#E8FDF5,stroke:#50C878
     classDef errorStep fill:#FDE8E8,stroke:#D0021B
 
-    class BuildContext,MemoryRecall,HardwareRAG,LoadDatasheets,Enrich,BuildPrompt,InitHistory contextStep
+    class BuildContext,MemoryRecallRAG,LoadDatasheets,Enrich,BuildPrompt,InitHistory contextStep
     class LLMRequest,ParseResponse llmStep
     class ExecuteTools,ScrubResults,AddResults toolStep
     class Error errorStep
@@ -456,8 +446,6 @@ flowchart TB
 
     Categories --> Storage[(Persistent Storage)]
 
-    RAG[Hardware RAG] -.->|load_chunks| Markdown
-
     classDef frontend fill:#E8F4FD,stroke:#4A90E2
     classDef backend fill:#FFF4E6,stroke:#F5A623
     classDef category fill:#E8FDF5,stroke:#50C878
@@ -478,10 +466,9 @@ flowchart TB
 ```mermaid
 flowchart TB
     subgraph Providers[Supported Providers]
-        OR[OpenRouter]
         Anth[Anthropic]
         OAI[OpenAI]
-        OpenRouter[openrouter]
+        Gemini[gemini]
         MiniMax[minimax]
         DeepSeek[deepseek]
         Kimi[kimi]
@@ -523,7 +510,7 @@ flowchart TB
     classDef factory fill:#E8FDF5,stroke:#50C878
     classDef trait fill:#FDE8E8,stroke:#D0021B
 
-    class OR,Anth,OAI,OpenRouter,MiniMax,DeepSeek,Kimi,Custom provider
+    class Anth,OAI,Gemini,MiniMax,DeepSeek,Kimi,Custom provider
     class Routes routing
     class Resilient,Routed factory
     class ChatSystem,ChatHistory,ChatTools,Warmup,SupportsNative trait
@@ -542,8 +529,6 @@ flowchart TB
         Memory[Memory Tools<br/>store, recall, forget]
         Schedule[Schedule Tools<br/>cron_add, cron_list, etc.]
         Browser[Browser<br/>Brave integration]
-        Composio[Composio<br/>1000+ app actions]
-        Hardware[Hardware<br/>gpio_read, gpio_write,<br/>arduino_upload, etc.]
         Delegate[Delegate<br/>Sub-agent routing]
         Screenshot[screenshot<br/>Screen capture]
     end
@@ -551,7 +536,6 @@ flowchart TB
     subgraph Registry[Tool Registry]
         AllTools[all_tools_with_runtime<br/>Factory function]
         DefaultTools[default_tools<br/>Base set]
-        PeripheralTools[create_peripheral_tools<br/>Hardware-specific]
     end
 
     subgraph Security[Security Policy]
@@ -592,8 +576,8 @@ flowchart TB
     classDef security fill:#FDE8E8,stroke:#D0021B
     classDef exec fill:#E8FDF5,stroke:#50C878
 
-    class Core,Memory,Schedule,Browser,Composio,Hardware,Delegate,Screenshot tools
-    class AllTools,DefaultTools,PeripheralTools registry
+    class Core,Memory,Schedule,Browser,Delegate,Screenshot tools
+    class AllTools,DefaultTools registry
     class AllowedCmds,WorkspaceOnly,MaxActions,MaxCost,Approval security
     class Validate,Approve,Prompt,Execute,Scrub,Result,Return exec
 ```
@@ -607,10 +591,6 @@ flowchart TB
 ```mermaid
 flowchart TB
     Start[Config::load_or_init] --> Exists{Config file<br/>exists?}
-
-    Exists -->|No| RunWizard[Run onboard wizard]
-    RunWizard --> Save[Save config.toml]
-    Save --> Load[Load from file]
 
     Exists -->|Yes| Load
 
@@ -635,11 +615,8 @@ flowchart TB
     Complete --> Reliability[reliability config<br/>timeouts, retries]
     Complete --> Observability[observability<br/>backend, metrics]
     Complete --> Runtime[runtime config<br/>kind, exec]
-    Complete --> Peripherals[peripherals<br/>boards, datasheet_dir]
     Complete --> Cron[cron config<br/>enabled, db_path]
-    Complete --> Composio[composio<br/>enabled, api_key]
     Complete --> Browser[browser<br/>enabled, allowlist]
-    Complete --> Tunnel[tunnel<br/>provider, token]
 
     classDef config fill:#E8F4FD,stroke:#4A90E2
     classDef error fill:#FDE8E8,stroke:#D0021B
@@ -647,74 +624,11 @@ flowchart TB
 
     class Load,Parse,Defaults,EnvOverrides,Validate,Complete config
     class Error error
-    class Paths,Providers,Model,Gateway,Channels,Memory,Security,Reliability,Observability,Runtime,Peripherals,Cron,Composio,Browser,Tunnel section
+    class Paths,Providers,Model,Gateway,Channels,Memory,Security,Reliability,Observability,Runtime,Peripherals,Cron,Browser section
 ```
 
 ---
 
-## 12. Hardware Peripherals Integration
-
-**Hardware board support and control:**
-
-```mermaid
-flowchart TB
-    subgraph Boards[Supported Boards]
-        Nucleo[Nucleo-F401RE<br/>STM32F401RETx]
-        Uno[Arduino Uno<br/>ATmega328P]
-        UnoQ[Uno Q<br/>ESP32 WiFi bridge]
-        RPi[RPi GPIO<br/>Native Linux]
-        ESP32[ESP32<br/>Direct serial]
-    end
-
-    subgraph Transport[Transport Layer]
-        Serial[Serial port<br/>/dev/ttyACM0, /dev/ttyUSB0]
-        USB[USB probe-rs<br/>ST-Link JTAG]
-        Native[Native GPIO<br/>Linux sysfs]
-    end
-
-    subgraph Peripherals[Peripheral System]
-        Create[create_peripheral_tools<br/>Factory function]
-        GPIO[gpio_read/write<br/>Digital I/O]
-        Upload[arduino_upload<br/>Sketch flash]
-        MemMap[hardware_memory_map<br/>Address ranges]
-        BoardInfo[hardware_board_info<br/>Chip identification]
-        MemRead[hardware_memory_read<br/>Register dump]
-        Capabilities[hardware_capabilities<br/>Pin enumeration]
-    end
-
-    subgraph RAG[Hardware RAG]
-        Datasheets[datasheet_dir<br/>.md documentation]
-        Chunks[Chunked embedding<br/>Semantic search]
-        PinAliases[Pin alias mapping<br/>red_led → 13]
-    end
-
-    Boards --> Transport
-    Transport --> Peripherals
-
-    RAG -.->|Context injection| Peripherals
-
-    Create --> ToolRegistry[Tool registry]
-    GPIO --> ToolRegistry
-    Upload --> ToolRegistry
-    MemMap --> ToolRegistry
-    BoardInfo --> ToolRegistry
-    MemRead --> ToolRegistry
-    Capabilities --> ToolRegistry
-
-    ToolRegistry --> Agent[Agent loop integration]
-
-    classDef board fill:#E8F4FD,stroke:#4A90E2
-    classDef transport fill:#FFF4E6,stroke:#F5A623
-    classDef peripheral fill:#E8FDF5,stroke:#50C878
-    classDef rag fill:#FDE8E8,stroke:#D0021B
-
-    class Nucleo,Uno,UnoQ,RPi,ESP32 board
-    class Serial,USB,Native transport
-    class Create,GPIO,Upload,MemMap,BoardInfo,MemRead,Capabilities,ToolRegistry peripheral
-    class Datasheets,Chunks,PinAliases rag
-```
-
----
 
 ## 13. Observable Events
 
@@ -725,7 +639,6 @@ flowchart TB
     subgraph Observers[Observer Backends]
         Noop[NoopObserver<br/>No-op / testing]
         Console[ConsoleObserver<br/>Stdout logging]
-        Metrics[MetricsObserver<br/>Prometheus format]
     end
 
     subgraph Events[Observable Events]
@@ -740,8 +653,6 @@ flowchart TB
 
     subgraph Outputs[Outputs]
         Stdout[stdout trace logs]
-        MetricsFile[metrics.json<br/>JSON lines]
-        Prometheus[Prometheus<br/>Text format]
     end
 
     Events --> Observers
@@ -757,18 +668,16 @@ flowchart TB
 
     Record --> Dispatch[Dispatch to backend]
     Dispatch --> Console
-    Dispatch --> Metrics
 
     Console --> Stdout
-    Metrics --> MetricsFile
 
     classDef observer fill:#E8F4FD,stroke:#4A90E2
     classDef event fill:#FFF4E6,stroke:#F5A623
     classDef output fill:#E8FDF5,stroke:#50C878
 
-    class Noop,Console,Metrics observer
+    class Noop,Console observer
     class AgentStart,LlmRequest,LlmResponse,ToolCallStart,ToolCall,TurnComplete,AgentEnd,Record,Dispatch event
-    class Stdout,MetricsFile,Prometheus output
+    class Stdout output
 ```
 
 ---
@@ -813,13 +722,8 @@ mindmap
                 Approval
                 Policy
         Integrations
-            Composio
-                1000+ apps
             Browser
                 Brave
-            Tunnel
-                Cloudflare
-                boringproxy
         Hardware
             STM32
             Arduino

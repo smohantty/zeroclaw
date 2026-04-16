@@ -1,7 +1,7 @@
 //! Report template tool — standalone access to template engine.
 //!
 //! Exposes the report template engine directly so agents can render
-//! templates with custom variable maps without going through ProjectIntelTool.
+//! templates with custom variable maps.
 
 use super::report_templates;
 use async_trait::async_trait;

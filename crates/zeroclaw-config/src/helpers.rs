@@ -2,43 +2,6 @@
 
 use crate::traits::{PropFieldInfo, PropKind};
 
-/// Return a comma-separated string of valid enum variant names for display in error messages.
-#[cfg(feature = "schema-export")]
-pub fn enum_variants<T: schemars::JsonSchema>() -> String {
-    #[cfg(feature = "schema-export")]
-    let schema = schemars::schema_for!(T);
-    let json = match serde_json::to_value(&schema) {
-        Ok(v) => v,
-        Err(_) => return "(unknown variants)".to_string(),
-    };
-
-    if let Some(variants) = json.get("enum").and_then(|v| v.as_array()) {
-        let names: Vec<&str> = variants.iter().filter_map(|v| v.as_str()).collect();
-        if !names.is_empty() {
-            return names.join(", ");
-        }
-    }
-
-    if let Some(one_of) = json.get("oneOf").and_then(|v| v.as_array()) {
-        let names: Vec<&str> = one_of
-            .iter()
-            .filter_map(|s| {
-                s.get("const").and_then(|v| v.as_str()).or_else(|| {
-                    s.get("enum")
-                        .and_then(|v| v.as_array())
-                        .and_then(|arr| arr.first())
-                        .and_then(|v| v.as_str())
-                })
-            })
-            .collect();
-        if !names.is_empty() {
-            return names.join(", ");
-        }
-    }
-
-    "(unknown variants)".to_string()
-}
-
 /// Build a `PropFieldInfo` by reading the display value from a serialized TOML table.
 pub fn make_prop_field(
     table: Option<&toml::Table>,
@@ -48,7 +11,6 @@ pub fn make_prop_field(
     type_hint: &'static str,
     kind: PropKind,
     is_secret: bool,
-    enum_variants: Option<fn() -> Vec<String>>,
 ) -> PropFieldInfo {
     let display_value = if is_secret {
         match table.and_then(|t| t.get(serde_name)) {
@@ -65,7 +27,6 @@ pub fn make_prop_field(
         type_hint,
         kind,
         is_secret,
-        enum_variants,
     }
 }
 

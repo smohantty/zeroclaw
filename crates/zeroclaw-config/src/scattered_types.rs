@@ -1,17 +1,14 @@
 //! Config types that were originally defined in their home modules (agent, channels, tools, trust)
 //! but are needed by the config schema. Moved here to break circular dependencies.
 
-use crate::traits::{ChannelConfig, HasPropKind, PropKind};
-#[cfg(feature = "schema-export")]
+use crate::traits::{HasPropKind, PropKind};
 use serde::{Deserialize, Serialize};
-use std::fmt;
 use zeroclaw_macros::Configurable;
 
 // ── Agent config types ──────────────────────────────────────────
 
 /// How deeply the model should reason for a given message.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[serde(rename_all = "lowercase")]
 pub enum ThinkingLevel {
     Off,
@@ -43,7 +40,6 @@ impl ThinkingLevel {
 
 /// Configuration for thinking/reasoning level control.
 #[derive(Debug, Clone, Serialize, Deserialize, Configurable)]
-#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[prefix = "agent.thinking"]
 pub struct ThinkingConfig {
     #[serde(default)]
@@ -69,7 +65,6 @@ fn default_collapse() -> bool {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Configurable)]
-#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[prefix = "agent.history-pruning"]
 pub struct HistoryPrunerConfig {
     #[serde(default)]
@@ -98,7 +93,6 @@ fn default_cost_optimized_hint() -> String {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Configurable)]
-#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[prefix = "agent.auto-classify"]
 pub struct AutoClassifyConfig {
     #[serde(default)]
@@ -130,7 +124,6 @@ fn default_eval_max_retries() -> u32 {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Configurable)]
-#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[prefix = "agent.eval"]
 pub struct EvalConfig {
     #[serde(default)]
@@ -183,7 +176,6 @@ fn default_tool_result_retrim_chars() -> usize {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Configurable)]
-#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[prefix = "agent.context-compression"]
 pub struct ContextCompressionConfig {
     #[serde(default = "default_cc_enabled")]
@@ -241,7 +233,6 @@ fn default_browser_task_timeout() -> u64 {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Configurable)]
-#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[prefix = "browser-delegate"]
 pub struct BrowserDelegateConfig {
     #[serde(default)]
@@ -290,7 +281,6 @@ fn default_success_boost() -> f64 {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Configurable)]
-#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[prefix = "trust"]
 pub struct TrustConfig {
     #[serde(default = "default_initial_score")]
@@ -313,238 +303,6 @@ impl Default for TrustConfig {
             regression_threshold: default_regression_threshold(),
             correction_penalty: default_correction_penalty(),
             success_boost: default_success_boost(),
-        }
-    }
-}
-
-// ── Channel config types ────────────────────────────────────────
-
-fn default_imap_port() -> u16 {
-    993
-}
-fn default_smtp_port() -> u16 {
-    465
-}
-fn default_imap_folder() -> String {
-    "INBOX".into()
-}
-fn default_idle_timeout() -> u64 {
-    1740
-}
-fn default_true() -> bool {
-    true
-}
-fn default_subject() -> String {
-    "ZeroClaw Message".into()
-}
-fn default_max_attachment_bytes() -> usize {
-    25 * 1024 * 1024
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, zeroclaw_macros::Configurable)]
-#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
-#[prefix = "channels.email"]
-pub struct EmailConfig {
-    #[serde(default)]
-    pub enabled: bool,
-    pub imap_host: String,
-    #[serde(default = "default_imap_port")]
-    pub imap_port: u16,
-    #[serde(default = "default_imap_folder")]
-    pub imap_folder: String,
-    pub smtp_host: String,
-    #[serde(default = "default_smtp_port")]
-    pub smtp_port: u16,
-    #[serde(default = "default_true")]
-    pub smtp_tls: bool,
-    pub username: String,
-    #[secret]
-    pub password: String,
-    pub from_address: String,
-    #[serde(default = "default_idle_timeout", alias = "poll_interval_secs")]
-    pub idle_timeout_secs: u64,
-    #[serde(default)]
-    pub allowed_senders: Vec<String>,
-    #[serde(default = "default_subject")]
-    pub default_subject: String,
-    #[serde(default = "default_max_attachment_bytes")]
-    pub max_attachment_bytes: usize,
-}
-
-impl ChannelConfig for EmailConfig {
-    fn name() -> &'static str {
-        "Email"
-    }
-    fn desc() -> &'static str {
-        "Email over IMAP/SMTP"
-    }
-}
-
-impl Default for EmailConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            imap_host: String::new(),
-            imap_port: default_imap_port(),
-            imap_folder: default_imap_folder(),
-            smtp_host: String::new(),
-            smtp_port: default_smtp_port(),
-            smtp_tls: true,
-            username: String::new(),
-            password: String::new(),
-            from_address: String::new(),
-            idle_timeout_secs: default_idle_timeout(),
-            allowed_senders: Vec::new(),
-            default_subject: default_subject(),
-            max_attachment_bytes: default_max_attachment_bytes(),
-        }
-    }
-}
-
-fn default_label_filter() -> Vec<String> {
-    vec!["INBOX".into()]
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, zeroclaw_macros::Configurable)]
-#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
-#[prefix = "channels.gmail"]
-pub struct GmailPushConfig {
-    #[serde(default)]
-    pub enabled: bool,
-    pub topic: String,
-    #[serde(default = "default_label_filter")]
-    pub label_filter: Vec<String>,
-    #[serde(default)]
-    #[secret]
-    pub oauth_token: String,
-    #[serde(default)]
-    pub allowed_senders: Vec<String>,
-    #[serde(default)]
-    pub webhook_url: String,
-    #[serde(default)]
-    pub webhook_secret: String,
-}
-
-impl ChannelConfig for GmailPushConfig {
-    fn name() -> &'static str {
-        "Gmail Push"
-    }
-    fn desc() -> &'static str {
-        "Gmail Pub/Sub push notifications"
-    }
-}
-
-impl Default for GmailPushConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            topic: String::new(),
-            label_filter: default_label_filter(),
-            oauth_token: String::new(),
-            allowed_senders: Vec::new(),
-            webhook_url: String::new(),
-            webhook_secret: String::new(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize, zeroclaw_macros::Configurable)]
-#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
-#[prefix = "channels.clawdtalk"]
-pub struct ClawdTalkConfig {
-    #[serde(default)]
-    pub enabled: bool,
-    #[secret]
-    pub api_key: String,
-    pub connection_id: String,
-    pub from_number: String,
-    #[serde(default)]
-    pub allowed_destinations: Vec<String>,
-    #[serde(default)]
-    #[secret]
-    pub webhook_secret: Option<String>,
-}
-
-impl ChannelConfig for ClawdTalkConfig {
-    fn name() -> &'static str {
-        "ClawdTalk"
-    }
-    fn desc() -> &'static str {
-        "ClawdTalk Channel"
-    }
-}
-
-/// Which telephony provider to use.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
-#[serde(rename_all = "lowercase")]
-pub enum VoiceProvider {
-    #[default]
-    Twilio,
-    Telnyx,
-    Plivo,
-}
-
-impl HasPropKind for VoiceProvider {
-    const PROP_KIND: PropKind = PropKind::Enum;
-}
-
-impl fmt::Display for VoiceProvider {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Twilio => write!(f, "twilio"),
-            Self::Telnyx => write!(f, "telnyx"),
-            Self::Plivo => write!(f, "plivo"),
-        }
-    }
-}
-
-fn default_webhook_port() -> u16 {
-    8090
-}
-fn default_max_call_duration() -> u64 {
-    3600
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Configurable)]
-#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
-#[prefix = "channels.voice-call"]
-pub struct VoiceCallConfig {
-    #[serde(default)]
-    pub enabled: bool,
-    #[serde(default)]
-    pub provider: VoiceProvider,
-    pub account_id: String,
-    pub auth_token: String,
-    pub from_number: String,
-    #[serde(default = "default_webhook_port")]
-    pub webhook_port: u16,
-    #[serde(default = "default_true")]
-    pub require_outbound_approval: bool,
-    #[serde(default = "default_true")]
-    pub transcription_logging: bool,
-    #[serde(default)]
-    pub tts_voice: Option<String>,
-    #[serde(default = "default_max_call_duration")]
-    pub max_call_duration_secs: u64,
-    #[serde(default)]
-    pub webhook_base_url: Option<String>,
-}
-
-impl Default for VoiceCallConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            provider: VoiceProvider::default(),
-            account_id: String::new(),
-            auth_token: String::new(),
-            from_number: String::new(),
-            webhook_port: default_webhook_port(),
-            require_outbound_approval: default_true(),
-            transcription_logging: default_true(),
-            tts_voice: None,
-            max_call_duration_secs: default_max_call_duration(),
-            webhook_base_url: None,
         }
     }
 }

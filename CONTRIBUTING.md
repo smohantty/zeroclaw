@@ -151,7 +151,6 @@ ZeroClaw supports layered secret management for local development and CI hygiene
     - Persistent setup for long-term use
     - When `secrets.encrypt = true` (default), secret values are encrypted before save
     - Secret key is stored at `~/.zeroclaw/.secret_key` with restricted permissions
-    - Use `zeroclaw onboard` for guided setup
 
 ### Runtime Resolution Rules
 
@@ -258,7 +257,7 @@ To keep docs useful under high PR volume, we use these rules:
 | `docs/contributing/pr-workflow.md` | governance logic and merge contract | workflow/risk/merge gate changes |
 | `docs/contributing/reviewer-playbook.md` | reviewer operating checklist | review depth or triage behavior changes |
 | `docs/contributing/ci-map.md` | CI ownership and triage entry points | workflow trigger/job ownership changes |
-| `docs/ops/network-deployment.md` | runtime deployment and network operating guide | gateway/channel/tunnel/network runtime behavior changes |
+| `docs/ops/operations-runbook.md` | runtime deployment and operations guide | gateway/channel/network runtime behavior changes |
 | `docs/ops/proxy-agent-playbook.md` | agent-operable proxy runbook and rollback recipes | proxy scope/selector/tooling behavior changes |
 
 ## PR Definition of Ready (DoR)

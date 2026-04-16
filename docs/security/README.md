@@ -14,9 +14,6 @@ For current runtime behavior, start here:
 
 The following docs are explicitly proposal-oriented and may include hypothetical CLI/config examples:
 
-- [agnostic-security.md](agnostic-security.md)
-- [frictionless-security.md](frictionless-security.md)
-- [sandboxing.md](sandboxing.md)
 - [../ops/resource-limits.md](../ops/resource-limits.md)
 - [audit-logging.md](audit-logging.md)
 - [security-roadmap.md](security-roadmap.md)

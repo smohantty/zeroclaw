@@ -320,8 +320,6 @@ mod tests {
     fn test_observability_config() -> ObservabilityConfig {
         ObservabilityConfig {
             backend: "none".to_string(),
-            otel_endpoint: None,
-            otel_service_name: None,
             runtime_trace_mode: "rolling".to_string(),
             runtime_trace_path: "state/runtime-trace.jsonl".to_string(),
             runtime_trace_max_entries: 3,
@@ -398,7 +396,7 @@ mod tests {
             timestamp: Utc::now().to_rfc3339(),
             event_type: "tool_call_result".into(),
             channel: Some("telegram".into()),
-            provider: Some("openrouter".into()),
+            provider: Some("openai".into()),
             model: Some("x".into()),
             turn_id: Some("turn-1".into()),
             success: Some(false),
