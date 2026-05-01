@@ -19,6 +19,7 @@
 
 <p align="center">
   <a href="docs/book/src/introduction.md">Docs</a> ·
+  <a href="SPEC.md">Spec</a> ·
   <a href="docs/book/src/philosophy.md">Philosophy</a> ·
   <a href="docs/book/src/getting-started/quick-start.md">Quick start</a> ·
   <a href="docs/book/src/architecture/overview.md">Architecture</a> ·
@@ -111,7 +112,7 @@ One TOML file at `~/.zeroclaw/config.toml`. Pointers:
 └──────────────────────────────────────────────────────────────┘
 ```
 
-Full detail with Mermaid diagrams: [Architecture overview](docs/book/src/architecture/overview.md) · [Request lifecycle](docs/book/src/architecture/request-lifecycle.md) · [Crates](docs/book/src/architecture/crates.md).
+Full detail with Mermaid diagrams: [Architecture overview](docs/book/src/architecture/overview.md) · [Request lifecycle](docs/book/src/architecture/request-lifecycle.md) · [Crates](docs/book/src/architecture/crates.md). For a language-agnostic blueprint that a coding agent can use to recreate a similar runtime in another stack, see [SPEC.md](SPEC.md).
 
 ## Contributing
 
